@@ -10,20 +10,21 @@ interface SoundSystemProps {
   onStudentCalled: (studentName: string) => void
 }
 
-export function SoundSystem({ queue, onStudentCalled }: SoundSystemProps) {
+export function SoundSystem({ queue = [], onStudentCalled }: SoundSystemProps) {
   const [currentAnnouncement, setCurrentAnnouncement] = useState<string>('')
   const [isPlaying, setIsPlaying] = useState(false)
   const [autoMode, setAutoMode] = useState(true)
 
   // Simulate automatic announcements
   useEffect(() => {
-    if (!autoMode || queue.length === 0) return
+    const queueArray = Array.isArray(queue) ? queue : []
+    if (!autoMode || queueArray.length === 0) return
 
-    const nextStudent = queue.find(req => req.status === 'waiting')
+    const nextStudent = queueArray.find(req => req?.status === 'waiting')
     if (!nextStudent) return
 
     const timer = setTimeout(() => {
-      handleCallStudent(nextStudent.students[0], nextStudent.id)
+      handleCallStudent(nextStudent.students?.[0], nextStudent.id)
     }, 3000) // Auto-call next student every 3 seconds
 
     return () => clearTimeout(timer)
@@ -49,9 +50,10 @@ export function SoundSystem({ queue, onStudentCalled }: SoundSystemProps) {
   }
 
   const manualCall = () => {
-    const nextStudent = queue.find(req => req.status === 'waiting')
+    const queueArray = Array.isArray(queue) ? queue : []
+    const nextStudent = queueArray.find(req => req?.status === 'waiting')
     if (nextStudent) {
-      handleCallStudent(nextStudent.students[0], nextStudent.id)
+      handleCallStudent(nextStudent.students?.[0], nextStudent.id)
     }
   }
 
@@ -83,7 +85,7 @@ export function SoundSystem({ queue, onStudentCalled }: SoundSystemProps) {
           <Button
             size="sm"
             onClick={manualCall}
-            disabled={isPlaying || queue.filter(q => q.status === 'waiting').length === 0}
+            disabled={isPlaying || (Array.isArray(queue) ? queue : []).filter(q => q?.status === 'waiting').length === 0}
             className="gap-2"
           >
             {isPlaying ? <Pause size={14} /> : <Play size={14} />}
@@ -103,7 +105,7 @@ export function SoundSystem({ queue, onStudentCalled }: SoundSystemProps) {
         <div className="text-sm">
           <p className="text-muted-foreground mb-2">الطوابير القادمة:</p>
           <div className="space-y-1">
-            {queue.filter(q => q.status === 'waiting').slice(0, 3).map((request, index) => (
+            {(Array.isArray(queue) ? queue : []).filter(q => q?.status === 'waiting').slice(0, 3).map((request, index) => (
               <div key={request.id} className="flex items-center gap-2 text-xs">
                 <Badge variant="outline" className="text-xs">
                   {index + 1}

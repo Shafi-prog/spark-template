@@ -116,13 +116,13 @@ export function AuthorizedDriverView({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Student size={20} />
-              الطلاب المفوض باستلامهم ({students.length})
+              الطلاب المفوض باستلامهم ({studentsArray.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {students.length > 0 ? (
+            {studentsArray.length > 0 ? (
               <div className="space-y-3">
-                {students.map(student => (
+                {studentsArray.map(student => (
                   <div key={student.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
@@ -182,7 +182,7 @@ export function AuthorizedDriverView({
                   </p>
                   <div className="space-y-1">
                     {dismissalQueue.calledStudents.map((studentId: string) => {
-                      const student = students.find(s => s.id === studentId)
+                      const student = studentsArray.find(s => s?.id === studentId)
                       return student ? (
                         <p key={studentId} className="text-sm">{student.name}</p>
                       ) : null
@@ -207,7 +207,7 @@ export function AuthorizedDriverView({
           {dismissalQueue.isActive 
             ? 'طلب الاستلام قيد التنفيذ' 
             : canRequestPickup 
-              ? `طلب استلام ${students.length} طالب` 
+              ? `طلب استلام ${studentsArray.length} طالب` 
               : 'اقترب من المدرسة لتفعيل الطلب'
           }
         </Button>
