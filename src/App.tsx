@@ -8,10 +8,15 @@ import { SchoolDashboard } from './apps/SchoolDashboard'
 import { TeacherApp } from './apps/TeacherApp'
 import { LoginScreen } from './components/auth/LoginScreen'
 import { UserSelection } from './components/auth/UserSelection'
+import { LanguageSwitcher } from './components/ui/LanguageSwitcher'
+
+// Hooks
+import { useLanguage } from './hooks/useLanguage'
 
 function App() {
   const [currentUser, setCurrentUser] = useKV('current_user', null)
   const [authStep, setAuthStep] = useState('selection') // 'selection', 'login', 'app'
+  const { t, language } = useLanguage()
 
   // Initialize comprehensive demo data
   useEffect(() => {
@@ -244,13 +249,13 @@ function App() {
   const handleLogin = (userData: any) => {
     setCurrentUser(userData)
     setAuthStep('app')
-    toast.success(`مرحباً ${userData.name}`)
+    toast.success(`${t('auth.welcome')} ${userData.name}`)
   }
 
   const handleLogout = () => {
     setCurrentUser(null)
     setAuthStep('selection')
-    toast.info('تم تسجيل الخروج بنجاح')
+    toast.info(t('status.success'))
   }
 
   const renderApp = () => {
@@ -282,6 +287,11 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col arabic-text">
+      {/* Language Switcher - positioned at top right */}
+      <div className="absolute top-4 left-4 z-50">
+        <LanguageSwitcher />
+      </div>
+      
       {renderApp()}
       <Toaster 
         position="top-center"
@@ -290,7 +300,7 @@ function App() {
             background: 'var(--card)',
             color: 'var(--foreground)',
             border: '1px solid var(--border)',
-            fontFamily: 'Cairo'
+            fontFamily: language === 'ar' ? 'Cairo' : 'system-ui'
           }
         }}
       />
