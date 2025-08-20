@@ -14,10 +14,12 @@ interface Student {
   photo?: string
   status: 'present' | 'absent' | 'late' | 'pending' | 'picked_up' | 'in_bus'
   canRequestDismissal: boolean
+  canRequestEarly?: boolean
 }
 
 interface StudentGridProps {
   students: Student[]
+  userRole?: string
   onRequestDismissal: () => void
   onEarlyDismissal: () => void
 }
@@ -61,11 +63,21 @@ const statusConfig = {
   }
 }
 
-export function StudentGrid({ students, onRequestDismissal, onEarlyDismissal }: StudentGridProps) {
+export function StudentGrid({ students, userRole = 'parent', onRequestDismissal, onEarlyDismissal }: StudentGridProps) {
+  const getRoleLabel = () => {
+    switch (userRole) {
+      case 'authorized_driver':
+        return 'الطلاب المفوض بهم'
+      case 'parent':
+      default:
+        return 'الأبناء'
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-foreground">الأبناء</h2>
+        <h2 className="text-xl font-bold text-foreground">{getRoleLabel()}</h2>
         <Badge variant="outline" className="text-sm">
           {students.length} طالب
         </Badge>
@@ -117,18 +129,22 @@ export function StudentGrid({ students, onRequestDismissal, onEarlyDismissal }: 
                     disabled={!student.canRequestDismissal}
                   >
                     <User size={14} className="ml-1" />
-                    طلب انصراف
+                    {userRole === 'authorized_driver' ? 'طلب استلام' : 'طلب انصراف'}
                   </Button>
                   
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={onEarlyDismissal}
-                  >
-                    <Clock size={14} className="ml-1" />
-                    استئذان مبكر
-                  </Button>
+                  {/* Only show early dismissal for parents */}
+                  {userRole === 'parent' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={onEarlyDismissal}
+                      disabled={!student.canRequestEarly}
+                    >
+                      <Clock size={14} className="ml-1" />
+                      استئذان مبكر
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

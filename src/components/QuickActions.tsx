@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
 interface QuickActionsProps {
+  userRole?: string
   onQuickDismissal: () => void
   onEmergencyRequest: () => void
   onManageDelegates: () => void
@@ -10,47 +11,73 @@ interface QuickActionsProps {
 }
 
 export function QuickActions({ 
+  userRole = 'parent',
   onQuickDismissal, 
   onEmergencyRequest, 
   onManageDelegates, 
   onViewReports 
 }: QuickActionsProps) {
-  const actions = [
-    {
-      icon: Car,
-      title: 'انصراف سريع',
-      subtitle: 'لجميع الأبناء',
-      color: 'bg-primary text-primary-foreground',
-      onClick: onQuickDismissal
-    },
-    {
-      icon: Warning,
-      title: 'طلب طارئ',
-      subtitle: 'حالة طوارئ',
-      color: 'bg-destructive text-destructive-foreground',
-      onClick: onEmergencyRequest
-    },
-    {
-      icon: Users,
-      title: 'المفوضون',
-      subtitle: 'إدارة التفويض',
-      color: 'bg-accent text-accent-foreground',
-      onClick: onManageDelegates
-    },
-    {
-      icon: ChartBar,
-      title: 'التقارير',
-      subtitle: 'إحصائيات الحضور',
-      color: 'bg-secondary text-secondary-foreground',
-      onClick: onViewReports
+  const getActionsForRole = () => {
+    if (userRole === 'authorized_driver') {
+      // Simplified actions for authorized drivers
+      return [
+        {
+          icon: Car,
+          title: 'استلام سريع',
+          subtitle: 'للطلاب المفوض بهم',
+          color: 'bg-primary text-primary-foreground',
+          onClick: onQuickDismissal
+        },
+        {
+          icon: ChartBar,
+          title: 'سجل الاستلام',
+          subtitle: 'عمليات سابقة',
+          color: 'bg-secondary text-secondary-foreground',
+          onClick: onViewReports
+        }
+      ]
     }
-  ]
+    
+    // Full actions for parents
+    return [
+      {
+        icon: Car,
+        title: 'انصراف سريع',
+        subtitle: 'لجميع الأبناء',
+        color: 'bg-primary text-primary-foreground',
+        onClick: onQuickDismissal
+      },
+      {
+        icon: Warning,
+        title: 'طلب طارئ',
+        subtitle: 'حالة طوارئ',
+        color: 'bg-destructive text-destructive-foreground',
+        onClick: onEmergencyRequest
+      },
+      {
+        icon: Users,
+        title: 'السائقون المفوضون',
+        subtitle: 'إدارة التفويض',
+        color: 'bg-accent text-accent-foreground',
+        onClick: onManageDelegates
+      },
+      {
+        icon: ChartBar,
+        title: 'التقارير',
+        subtitle: 'إحصائيات الحضور',
+        color: 'bg-secondary text-secondary-foreground',
+        onClick: onViewReports
+      }
+    ]
+  }
+
+  const actions = getActionsForRole()
 
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold text-foreground">العمليات السريعة</h2>
       
-      <div className="grid grid-cols-2 gap-4">
+      <div className={`grid gap-4 ${actions.length === 4 ? 'grid-cols-2' : 'grid-cols-2'}`}>
         {actions.map((action, index) => (
           <Card 
             key={index}
@@ -80,7 +107,10 @@ export function QuickActions({
         <CardContent className="p-4 text-center">
           <div className="space-y-2">
             <div className="text-sm font-medium text-foreground">
-              💡 نصيحة: يمكنك تفعيل طلب الانصراف تلقائياً عند الاقتراب من المدرسة
+              💡 نصيحة: {userRole === 'authorized_driver' 
+                ? 'تأكد من وجود التفويض قبل الوصول للمدرسة'
+                : 'يمكنك تفعيل طلب الانصراف تلقائياً عند الاقتراب من المدرسة'
+              }
             </div>
             <Button variant="outline" size="sm" className="text-xs">
               تعرف على المزيد

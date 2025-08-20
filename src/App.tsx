@@ -13,18 +13,26 @@ function App() {
   const [currentUser, setCurrentUser] = useKV('current_user', null)
   const [authStep, setAuthStep] = useState('selection') // 'selection', 'login', 'app'
 
-  // Initialize demo data
+  // Initialize comprehensive demo data
   useEffect(() => {
-    // Initialize some demo data for testing
     const initDemoData = async () => {
       const demoSchool = {
         id: 'school-1',
         name: 'مدرسة النور الابتدائية',
+        nameEn: 'Al-Nour Primary School',
         location: { lat: 24.7136, lng: 46.6753 },
+        address: 'حي النرجس، الرياض 13241',
         geofenceRadius: 100,
         dismissalTimes: {
           primary: '12:30',
-          intermediate: '13:00'
+          intermediate: '13:00',
+          secondary: '13:30'
+        },
+        settings: {
+          autoApprovalEnabled: false,
+          maxWaitTime: 30,
+          earlyDismissalCutoff: '11:00',
+          emergencyContactRequired: true
         }
       }
 
@@ -32,24 +40,32 @@ function App() {
         {
           id: 'student-1',
           name: 'محمد أحمد السعودي',
-          nameEn: 'Mohammed Ahmed',
+          nameEn: 'Mohammed Ahmed Al-Saudi',
+          nationalId: '1234567890',
           grade: 'الصف الثالث',
           section: 'أ',
           schoolId: 'school-1',
           currentTeacherId: 'teacher-1',
           status: 'present',
-          guardianId: 'parent-1'
+          guardianId: 'parent-1',
+          photoUrl: '/assets/images/student-placeholder.png',
+          medicalNotes: '',
+          authorizedDrivers: ['driver-1']
         },
         {
           id: 'student-2',
           name: 'فاطمة أحمد السعودي', 
-          nameEn: 'Fatimah Ahmed',
+          nameEn: 'Fatimah Ahmed Al-Saudi',
+          nationalId: '1234567891',
           grade: 'الصف الأول',
           section: 'ب',
           schoolId: 'school-1', 
           currentTeacherId: 'teacher-2',
           status: 'present',
-          guardianId: 'parent-1'
+          guardianId: 'parent-1',
+          photoUrl: '/assets/images/student-placeholder.png',
+          medicalNotes: '',
+          authorizedDrivers: ['driver-1']
         }
       ]
 
@@ -57,23 +73,113 @@ function App() {
         {
           id: 'teacher-1',
           name: 'أستاذة مريم العتيبي',
+          nameEn: 'Ms. Maryam Al-Otaibi',
+          phone: '+966501234567',
+          email: 'maryam@alnour.edu.sa',
           schoolId: 'school-1',
-          classes: [{ grade: 'الصف الثالث', section: 'أ' }],
-          currentPeriod: { subject: 'الرياضيات', time: '10:30-11:15' }
+          classes: [{ grade: 'الصف الثالث', section: 'أ', isPrimary: true }],
+          subjects: ['الرياضيات', 'العلوم'],
+          currentPeriod: { 
+            subject: 'الرياضيات', 
+            time: '10:30-11:15',
+            location: 'الفصل 3أ'
+          },
+          permissions: {
+            canReceiveDismissalRequests: true,
+            canViewStudentProfiles: true
+          }
         },
         {
           id: 'teacher-2', 
           name: 'أستاذة نورا الأحمد',
+          nameEn: 'Ms. Noura Al-Ahmad',
+          phone: '+966501234568',
+          email: 'noura@alnour.edu.sa',
           schoolId: 'school-1',
-          classes: [{ grade: 'الصف الأول', section: 'ب' }],
-          currentPeriod: { subject: 'اللغة العربية', time: '11:15-12:00' }
+          classes: [{ grade: 'الصف الأول', section: 'ب', isPrimary: true }],
+          subjects: ['اللغة العربية', 'التربية الإسلامية'],
+          currentPeriod: { 
+            subject: 'اللغة العربية', 
+            time: '11:15-12:00',
+            location: 'الفصل 1ب'
+          },
+          permissions: {
+            canReceiveDismissalRequests: true,
+            canViewStudentProfiles: true
+          }
         }
       ]
 
-      // Store demo data
+      const demoParents = [
+        {
+          id: 'parent-1',
+          name: 'أحمد السعودي',
+          nameEn: 'Ahmed Al-Saudi',
+          phone: '+966501111111',
+          nationalId: '1111111111',
+          children: ['student-1', 'student-2'],
+          authorizedDrivers: ['driver-1'],
+          location: { lat: 24.7136, lng: 46.6753 },
+          carInfo: {
+            make: 'تويوتا',
+            model: 'كامري',
+            color: 'أبيض',
+            plateNumber: 'أ ب ج 123'
+          }
+        }
+      ]
+
+      const demoDrivers = [
+        {
+          id: 'driver-1',
+          name: 'خالد السعودي',
+          nameEn: 'Khalid Al-Saudi',
+          phone: '+966502222222',
+          nationalId: '2222222222',
+          relationship: 'أخ',
+          relationshipEn: 'Brother',
+          authorizedBy: 'parent-1',
+          authorizedStudents: ['student-1', 'student-2'],
+          permissions: {
+            type: 'permanent',
+            validFrom: new Date().toISOString(),
+            validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+            daysOfWeek: [0, 1, 2, 3, 4], // Sunday to Thursday
+            timeRestrictions: { from: '12:00', to: '14:00' }
+          },
+          verified: true
+        }
+      ]
+
+      const demoSchoolAdmin = {
+        id: 'admin-1',
+        name: 'سارة الفهد',
+        nameEn: 'Sarah Al-Fahd',
+        phone: '+966503333333',
+        email: 'sarah@alnour.edu.sa',
+        role: 'principal',
+        schoolId: 'school-1',
+        permissions: {
+          canApproveEarlyDismissal: true,
+          canManageSettings: true,
+          canViewReports: true,
+          canManageStaff: true,
+          canDelegatePermissions: true
+        }
+      }
+
+      // Store demo data with proper keys
       await spark.kv.set('demo_school', demoSchool)
       await spark.kv.set('demo_students', demoStudents)
       await spark.kv.set('demo_teachers', demoTeachers)
+      await spark.kv.set('demo_parents', demoParents)
+      await spark.kv.set('demo_drivers', demoDrivers)
+      await spark.kv.set('demo_school_admin', demoSchoolAdmin)
+      
+      // Initialize empty queues and requests
+      await spark.kv.set('dismissal_queue', [])
+      await spark.kv.set('early_dismissal_requests', [])
+      await spark.kv.set('pending_approvals', [])
     }
 
     initDemoData()
@@ -111,6 +217,7 @@ function App() {
     // Render appropriate app based on user role
     switch (currentUser.role) {
       case 'parent':
+      case 'authorized_driver':
         return <ParentApp user={currentUser} onLogout={handleLogout} />
       case 'school_admin':
       case 'principal':

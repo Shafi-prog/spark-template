@@ -1,10 +1,25 @@
 import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
+import { toast } from 'sonner'
+
+// UI Components
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Switch } from "@/components/ui/switch"
+
+// Components
 import { SoundSystem } from '../components/SoundSystem'
+
+// Icons
 import { 
   Clock, 
   Users, 
@@ -19,9 +34,18 @@ import {
   School,
   UserCheck,
   List,
-  Volume2
+  Volume2,
+  Eye,
+  Check,
+  X,
+  MapPin,
+  Phone,
+  Car,
+  Student as StudentIcon,
+  GraduationCap,
+  Warning,
+  ChartBar
 } from "@phosphor-icons/react"
-import { toast } from 'sonner'
 
 interface SchoolDashboardProps {
   user: any
@@ -29,670 +53,674 @@ interface SchoolDashboardProps {
 }
 
 export function SchoolDashboard({ user, onLogout }: SchoolDashboardProps) {
-  const [dismissalRequests, setDismissalRequests] = useKV('school_dismissal_requests', [])
-  const [earlyDismissalRequests, setEarlyDismissalRequests] = useKV('school_early_requests', [])
-  const [activeQueue, setActiveQueue] = useKV('school_active_queue', [])
-  const [schoolStats, setSchoolStats] = useKV('school_stats', {
-    totalStudents: 450,
-    presentToday: 432,
-    dismissedToday: 0,
-    pendingRequests: 0
+  const [currentTab, setCurrentTab] = useState('overview')
+  const [selectedRequest, setSelectedRequest] = useState<any>(null)
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false)
+  const [approvalNotes, setApprovalNotes] = useState('')
+
+  // Data states
+  const [dismissalQueue, setDismissalQueue] = useKV('dismissal_queue_live', [])
+  const [pendingApprovals, setPendingApprovals] = useKV('pending_early_dismissals', [])
+  const [schoolNotifications, setSchoolNotifications] = useKV('school_notifications', [])
+  const [todayStats, setTodayStats] = useKV('today_school_stats', {
+    totalStudents: 485,
+    presentToday: 471,
+    dismissedToday: 12,
+    earlyDismissals: 3,
+    activeRequests: 0,
+    completedRequests: 8
+  })
+  
+  const [schoolSettings, setSchoolSettings] = useKV('school_settings', {
+    autoApprovalEnabled: false,
+    maxWaitTime: 30,
+    earlyDismissalCutoff: '11:00',
+    emergencyContactRequired: true,
+    soundSystemEnabled: true,
+    gpsValidationRequired: true,
+    location: { lat: 24.7136, lng: 46.6753 },
+    geofenceRadius: 100,
+    dismissalTimes: {
+      primary: '12:30',
+      intermediate: '13:00',
+      secondary: '13:30'
+    }
   })
 
-  // Load demo data
+  // Load live data
   useEffect(() => {
-    const loadSchoolData = async () => {
-      // Sample dismissal queue
-      const sampleQueue = [
-        {
-          id: 'req1',
-          parentName: 'أحمد السعودي',
-          students: ['محمد أحمد', 'فاطمة أحمد'],
-          arrivalTime: '12:25',
-          position: 1,
-          status: 'waiting',
-          carInfo: { location: 'A1', description: 'كامري بيضاء' }
-        },
-        {
-          id: 'req2', 
-          parentName: 'سارة العتيبي',
-          students: ['نورا سارة'],
-          arrivalTime: '12:28',
-          position: 2,
-          status: 'waiting',
-          carInfo: { location: 'B2', description: 'أكورد رمادية' }
-        },
-        {
-          id: 'req3',
-          parentName: 'محمد الأحمد', 
-          students: ['عبدالله محمد'],
-          arrivalTime: '12:30',
-          position: 3,
-          status: 'called',
-          carInfo: { location: 'A3', description: 'كرولا سوداء' }
-        }
-      ]
+    const loadLiveData = async () => {
+      try {
+        // Load active requests
+        const activeRequests = await spark.kv.get('active_requests') || []
+        setDismissalQueue(activeRequests)
+        
+        // Load pending approvals
+        const earlyRequests = await spark.kv.get('pending_early_dismissals') || []
+        setPendingApprovals(earlyRequests)
+        
+        // Load notifications
+        const notifications = await spark.kv.get('school_notifications') || []
+        setSchoolNotifications(notifications)
 
-      // Sample early dismissal requests
-      const sampleEarlyRequests = [
-        {
-          id: 'early1',
-          studentName: 'خالد أحمد',
-          parentName: 'أحمد الخالد',
-          grade: 'الصف الثاني',
-          section: 'أ',
-          reason: 'موعد طبي',
-          reasonType: 'medical',
-          requestTime: '10:30',
-          status: 'pending',
-          teacherId: 'teacher-1',
-          attachments: []
-        },
-        {
-          id: 'early2',
-          studentName: 'رنا محمد',
-          parentName: 'فاطمة السعد', 
-          grade: 'الصف الأول',
-          section: 'ب',
-          reason: 'ظرف عائلي طارئ',
-          reasonType: 'family',
-          requestTime: '11:15',
-          status: 'pending',
-          teacherId: 'teacher-2',
-          attachments: []
-        }
-      ]
-
-      setActiveQueue(sampleQueue)
-      setEarlyDismissalRequests(sampleEarlyRequests)
-      setSchoolStats(prev => ({
-        ...prev,
-        pendingRequests: sampleEarlyRequests.filter(r => r.status === 'pending').length
-      }))
-    }
-
-    loadSchoolData()
-  }, [setActiveQueue, setEarlyDismissalRequests, setSchoolStats])
-
-  const handleApproveEarlyRequest = async (requestId: string) => {
-    try {
-      const updatedRequests = earlyDismissalRequests.map(req => 
-        req.id === requestId 
-          ? { ...req, status: 'approved', approvedBy: user.name, approvedAt: new Date().toISOString() }
-          : req
-      )
-      
-      setEarlyDismissalRequests(updatedRequests)
-      
-      // Simulate notifying teacher
-      toast.success('تم الموافقة على الطلب وإشعار المعلم')
-      
-      // Update stats
-      setSchoolStats(prev => ({
-        ...prev,
-        pendingRequests: prev.pendingRequests - 1
-      }))
-    } catch (error) {
-      toast.error('حدث خطأ في الموافقة على الطلب')
-    }
-  }
-
-  const handleRejectEarlyRequest = async (requestId: string) => {
-    try {
-      const updatedRequests = earlyDismissalRequests.map(req =>
-        req.id === requestId
-          ? { ...req, status: 'rejected', rejectedBy: user.name, rejectedAt: new Date().toISOString() }
-          : req
-      )
-      
-      setEarlyDismissalRequests(updatedRequests)
-      toast.success('تم رفض الطلب وإشعار ولي الأمر')
-      
-      setSchoolStats(prev => ({
-        ...prev,
-        pendingRequests: prev.pendingRequests - 1
-      }))
-    } catch (error) {
-      toast.error('حدث خطأ في رفض الطلب')
-    }
-  }
-
-  const handleCallNext = async () => {
-    try {
-      const nextStudent = activeQueue.find(req => req.status === 'waiting')
-      if (nextStudent) {
-        const updatedQueue = activeQueue.map(req =>
-          req.id === nextStudent.id
-            ? { ...req, status: 'called', calledAt: new Date().toISOString() }
-            : req
-        )
-        setActiveQueue(updatedQueue)
-        toast.success(`تم نداء: ${nextStudent.students.join(', ')}`)
+        // Update stats
+        setTodayStats(prev => ({
+          ...prev,
+          activeRequests: activeRequests.length,
+          pendingEarlyDismissals: earlyRequests.length
+        }))
+      } catch (error) {
+        console.error('Error loading live data:', error)
       }
-    } catch (error) {
-      toast.error('حدث خطأ في النداء')
     }
-  }
 
-  const handleStudentCalled = async (studentName: string) => {
+    loadLiveData()
+    
+    // Refresh data every 30 seconds
+    const interval = setInterval(loadLiveData, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Handle early dismissal approval
+  const handleApproveEarlyDismissal = async (requestId: string, approved: boolean) => {
     try {
-      const studentRequest = activeQueue.find(req => req.students.includes(studentName))
-      if (studentRequest) {
-        const updatedQueue = activeQueue.map(req =>
-          req.id === studentRequest.id
-            ? { ...req, status: 'called', calledAt: new Date().toISOString() }
-            : req
-        )
-        setActiveQueue(updatedQueue)
+      const request = pendingApprovals.find(r => r.id === requestId)
+      if (!request) return
+
+      const updatedRequest = {
+        ...request,
+        status: approved ? 'approved' : 'rejected',
+        approvedBy: user.id,
+        approvedAt: new Date().toISOString(),
+        approvalNotes: approvalNotes,
+        rejectionReason: !approved ? approvalNotes : undefined
       }
+
+      // Update pending requests
+      const updatedPending = pendingApprovals.filter(r => r.id !== requestId)
+      setPendingApprovals(updatedPending)
+      await spark.kv.set('pending_early_dismissals', updatedPending)
+
+      if (approved) {
+        // Notify the assigned teacher
+        const teacherNotification = {
+          id: `teacher_notif_${Date.now()}`,
+          type: 'early_dismissal_approved',
+          title: 'طلب استئذان معتمد',
+          message: `${request.studentData.name} - ${request.reasonCategory}`,
+          data: updatedRequest,
+          timestamp: new Date().toISOString(),
+          read: false,
+          teacherId: request.studentData.currentTeacherId
+        }
+
+        const teacherNotifications = await spark.kv.get('teacher_notifications') || []
+        teacherNotifications.unshift(teacherNotification)
+        await spark.kv.set('teacher_notifications', teacherNotifications)
+
+        // Notify parent
+        const parentNotification = {
+          id: `parent_notif_${Date.now()}`,
+          type: 'early_dismissal_approved',
+          title: 'تم اعتماد طلب الاستئذان المبكر',
+          message: `تم الموافقة على استئذان ${request.studentData.name}`,
+          timestamp: new Date().toISOString(),
+          parentId: request.parentId
+        }
+        
+        // Store parent notification (would be sent via push/SMS in real implementation)
+        toast.success(`تم اعتماد طلب الاستئذان وإشعار المعلم`)
+      } else {
+        toast.info('تم رفض طلب الاستئذان مع إشعار ولي الأمر')
+      }
+
+      setShowApprovalDialog(false)
+      setSelectedRequest(null)
+      setApprovalNotes('')
     } catch (error) {
-      console.error('Error updating student call status:', error)
+      toast.error('حدث خطأ في معالجة الطلب')
     }
   }
 
-  const handleMarkPickedUp = async (requestId: string) => {
+  // Handle dismissal request management
+  const handleCallNextInQueue = async () => {
+    if (dismissalQueue.length === 0) return
+
+    const nextRequest = dismissalQueue.find(r => r.status === 'queued')
+    if (!nextRequest) return
+
     try {
-      const updatedQueue = activeQueue.map(req =>
-        req.id === requestId
-          ? { ...req, status: 'picked_up', pickedUpAt: new Date().toISOString() }
-          : req
+      // Update request status to called
+      const updatedQueue = dismissalQueue.map(r => 
+        r.id === nextRequest.id 
+          ? { ...r, status: 'called', calledAt: new Date().toISOString() }
+          : r
       )
-      setActiveQueue(updatedQueue)
       
-      setSchoolStats(prev => ({
-        ...prev,
-        dismissedToday: prev.dismissedToday + 1
-      }))
-      
-      toast.success('تم تأكيد الاستلام')
+      setDismissalQueue(updatedQueue)
+      await spark.kv.set('active_requests', updatedQueue)
+
+      // Trigger sound system
+      const studentsNames = nextRequest.studentsData.map(s => s.name)
+      toast.success(`تم نداء: ${studentsNames.join(' و ')}`)
+
+      // Here you would integrate with the actual sound system
+      // playAnnouncementSound(studentsNames)
     } catch (error) {
-      toast.error('حدث خطأ في التأكيد')
+      toast.error('حدث خطأ في نداء الطلاب')
     }
   }
+
+  const handleCompletePickup = async (requestId: string) => {
+    try {
+      const updatedQueue = dismissalQueue.map(r =>
+        r.id === requestId
+          ? { ...r, status: 'completed', completedAt: new Date().toISOString() }
+          : r
+      )
+      
+      setDismissalQueue(updatedQueue)
+      await spark.kv.set('active_requests', updatedQueue)
+      
+      setTodayStats(prev => ({
+        ...prev,
+        dismissedToday: prev.dismissedToday + 1,
+        completedRequests: prev.completedRequests + 1
+      }))
+
+      toast.success('تم تأكيد استلام الطلاب')
+    } catch (error) {
+      toast.error('حدث خطأ في تأكيد الاستلام')
+    }
+  }
+
+  // Update school settings
+  const handleUpdateSettings = async (newSettings: any) => {
+    try {
+      const updatedSettings = { ...schoolSettings, ...newSettings }
+      setSchoolSettings(updatedSettings)
+      await spark.kv.set('school_settings', updatedSettings)
+      toast.success('تم حفظ الإعدادات')
+    } catch (error) {
+      toast.error('حدث خطأ في حفظ الإعدادات')
+    }
+  }
+
+  // Render different tabs
+  const renderOverview = () => (
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">إجمالي الطلاب</p>
+                <p className="text-2xl font-bold">{todayStats.totalStudents}</p>
+              </div>
+              <Users className="h-8 w-8 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">حاضر اليوم</p>
+                <p className="text-2xl font-bold text-secondary">{todayStats.presentToday}</p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-secondary" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">تم انصرافهم</p>
+                <p className="text-2xl font-bold text-accent">{todayStats.dismissedToday}</p>
+              </div>
+              <UserCheck className="h-8 w-8 text-accent" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">طلبات نشطة</p>
+                <p className="text-2xl font-bold text-warning">{todayStats.activeRequests}</p>
+              </div>
+              <Clock className="h-8 w-8 text-warning" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Live Dismissal Queue */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>قائمة الانصراف المباشرة</span>
+            <Button onClick={handleCallNextInQueue} disabled={dismissalQueue.filter(r => r.status === 'queued').length === 0}>
+              <Volume2 size={16} className="ml-2" />
+              نداء التالي
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-96">
+            <div className="space-y-3">
+              {dismissalQueue.filter(r => r.status !== 'completed').map((request, index) => (
+                <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="font-medium">{request.requesterName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {request.studentsData.map(s => s.name).join(' • ')}
+                      </p>
+                      <div className="flex items-center gap-4 mt-1">
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Car size={12} />
+                          {request.carInfo?.type} {request.carInfo?.color}
+                        </span>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Phone size={12} />
+                          {request.requesterRole === 'authorized_driver' ? 'سائق مفوض' : 'ولي أمر'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={
+                      request.status === 'called' ? 'default' : 
+                      request.status === 'queued' ? 'secondary' : 'outline'
+                    }>
+                      {request.status === 'called' ? 'تم النداء' : 
+                       request.status === 'queued' ? 'في الانتظار' : request.status}
+                    </Badge>
+                    {request.status === 'called' && (
+                      <Button size="sm" onClick={() => handleCompletePickup(request.id)}>
+                        تأكيد الاستلام
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {dismissalQueue.filter(r => r.status !== 'completed').length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  لا توجد طلبات انصراف نشطة
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+    </div>
+  )
+
+  const renderEarlyDismissals = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>طلبات الاستئذان المبكر ({pendingApprovals.length})</CardTitle>
+          <CardDescription>
+            طلبات تحتاج لموافقة الإدارة قبل إشعار المعلم
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {pendingApprovals.map(request => (
+              <Card key={request.id} className="border-l-4 border-l-warning">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-10 w-10">
+                          <AvatarFallback>
+                            {request.studentData.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{request.studentData.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {request.studentData.grade} - {request.studentData.section}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-sm"><strong>ولي الأمر:</strong> {request.parentName}</p>
+                        <p className="text-sm"><strong>نوع السبب:</strong> 
+                          <Badge variant="outline" className="mr-2">
+                            {request.reasonCategory === 'medical' ? 'طبي' : 
+                             request.reasonCategory === 'family' ? 'عائلي' : 'أخرى'}
+                          </Badge>
+                        </p>
+                        <p className="text-sm"><strong>التفاصيل:</strong> {request.reason}</p>
+                        <p className="text-xs text-muted-foreground">
+                          طُلب في: {new Date(request.requestTime).toLocaleString('ar-SA')}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedRequest(request)
+                          setShowApprovalDialog(true)
+                        }}
+                      >
+                        <Eye size={16} className="ml-2" />
+                        مراجعة
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            
+            {pendingApprovals.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                لا توجد طلبات استئذان مبكر في انتظار الموافقة
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+
+  const renderSettings = () => (
+    <div className="space-y-6">
+      {/* School Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle>معلومات المدرسة</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>اسم المدرسة</Label>
+              <Input value="مدرسة النور الابتدائية" />
+            </div>
+            <div>
+              <Label>رقم الهاتف</Label>
+              <Input value="+966112345678" />
+            </div>
+          </div>
+          
+          <div>
+            <Label>العنوان</Label>
+            <Input value="حي النرجس، الرياض 13241" />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label>انصراف الابتدائي</Label>
+              <Input 
+                type="time" 
+                value={schoolSettings.dismissalTimes.primary}
+                onChange={(e) => handleUpdateSettings({
+                  dismissalTimes: {
+                    ...schoolSettings.dismissalTimes,
+                    primary: e.target.value
+                  }
+                })}
+              />
+            </div>
+            <div>
+              <Label>انصراف المتوسط</Label>
+              <Input 
+                type="time" 
+                value={schoolSettings.dismissalTimes.intermediate}
+                onChange={(e) => handleUpdateSettings({
+                  dismissalTimes: {
+                    ...schoolSettings.dismissalTimes,
+                    intermediate: e.target.value
+                  }
+                })}
+              />
+            </div>
+            <div>
+              <Label>انصراف الثانوي</Label>
+              <Input 
+                type="time" 
+                value={schoolSettings.dismissalTimes.secondary}
+                onChange={(e) => handleUpdateSettings({
+                  dismissalTimes: {
+                    ...schoolSettings.dismissalTimes,
+                    secondary: e.target.value
+                  }
+                })}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* System Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle>إعدادات النظام</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">الموافقة التلقائية على الاستئذان</p>
+              <p className="text-sm text-muted-foreground">الموافقة على الطلبات غير الطبية تلقائياً</p>
+            </div>
+            <Switch 
+              checked={schoolSettings.autoApprovalEnabled}
+              onCheckedChange={(checked) => handleUpdateSettings({ autoApprovalEnabled: checked })}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">نظام الصوت</p>
+              <p className="text-sm text-muted-foreground">تشغيل النداء الصوتي للطلاب</p>
+            </div>
+            <Switch 
+              checked={schoolSettings.soundSystemEnabled}
+              onCheckedChange={(checked) => handleUpdateSettings({ soundSystemEnabled: checked })}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">التحقق من الموقع</p>
+              <p className="text-sm text-muted-foreground">التأكد من وجود ولي الأمر في النطاق</p>
+            </div>
+            <Switch 
+              checked={schoolSettings.gpsValidationRequired}
+              onCheckedChange={(checked) => handleUpdateSettings({ gpsValidationRequired: checked })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>نطاق التفعيل (متر)</Label>
+              <Input 
+                type="number" 
+                value={schoolSettings.geofenceRadius}
+                onChange={(e) => handleUpdateSettings({ geofenceRadius: parseInt(e.target.value) })}
+              />
+            </div>
+            <div>
+              <Label>حد الاستئذان المبكر</Label>
+              <Input 
+                type="time" 
+                value={schoolSettings.earlyDismissalCutoff}
+                onChange={(e) => handleUpdateSettings({ earlyDismissalCutoff: e.target.value })}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                <School size={20} className="text-primary-foreground" weight="duotone" />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold">لوحة تحكم المدرسة</h1>
-                <p className="text-sm text-muted-foreground">مرحباً {user.name}</p>
-              </div>
+      <header className="bg-white shadow-sm border-b">
+        <div className="px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+              <School size={20} className="text-primary-foreground" weight="fill" />
             </div>
-            
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm">
-                <Bell size={16} />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Settings size={16} />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={onLogout}>
-                <SignOut size={16} />
-              </Button>
+            <div>
+              <h1 className="font-bold text-xl">لوحة تحكم المدرسة</h1>
+              <p className="text-sm text-muted-foreground">مرحباً {user.name} - {user.position}</p>
             </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="relative">
+              <Bell size={18} />
+              {schoolNotifications.filter(n => !n.read).length > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive rounded-full text-xs text-white flex items-center justify-center">
+                  {schoolNotifications.filter(n => !n.read).length}
+                </span>
+              )}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onLogout}>
+              <SignOut size={18} />
+            </Button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">إجمالي الطلاب</p>
-                  <p className="text-3xl font-bold">{schoolStats.totalStudents}</p>
-                </div>
-                <Users size={24} className="text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">الحضور اليوم</p>
-                  <p className="text-3xl font-bold text-secondary">{schoolStats.presentToday}</p>
-                </div>
-                <UserCheck size={24} className="text-secondary" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">تم الانصراف</p>
-                  <p className="text-3xl font-bold text-accent">{schoolStats.dismissedToday}</p>
-                </div>
-                <CheckCircle size={24} className="text-accent" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">طلبات معلقة</p>
-                  <p className="text-3xl font-bold text-warning">{schoolStats.pendingRequests}</p>
-                </div>
-                <AlertCircle size={24} className="text-warning" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Tabs */}
-        <Tabs defaultValue="queue" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="queue">طابور الانصراف</TabsTrigger>
-            <TabsTrigger value="early-requests">طلبات الاستئذان</TabsTrigger>
-            <TabsTrigger value="sound-system">النظام الصوتي</TabsTrigger>
-            <TabsTrigger value="reports">التقارير</TabsTrigger>
-            <TabsTrigger value="settings">الإعدادات</TabsTrigger>
+      {/* Main Content */}
+      <div className="p-6">
+        <Tabs value={currentTab} onValueChange={setCurrentTab}>
+          <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <BarChart3 size={16} />
+              نظرة عامة
+            </TabsTrigger>
+            <TabsTrigger value="early-dismissal" className="flex items-center gap-2">
+              <AlertCircle size={16} />
+              الاستئذان المبكر
+              {pendingApprovals.length > 0 && (
+                <Badge variant="destructive" className="ml-2">
+                  {pendingApprovals.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-2">
+              <ChartBar size={16} />
+              التقارير
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings size={16} />
+              الإعدادات
+            </TabsTrigger>
           </TabsList>
 
-          {/* Active Queue Management */}
-          <TabsContent value="queue" className="space-y-6">
+          <TabsContent value="overview">{renderOverview()}</TabsContent>
+          <TabsContent value="early-dismissal">{renderEarlyDismissals()}</TabsContent>
+          <TabsContent value="reports">
             <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>طابور الانصراف المباشر</CardTitle>
-                    <CardDescription>
-                      إدارة طابور الانصراف الحالي - {activeQueue.filter(r => r.status !== 'picked_up').length} في الانتظار
-                    </CardDescription>
-                  </div>
-                  <Button onClick={handleCallNext} className="gap-2">
-                    <List size={16} />
-                    نداء التالي
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {activeQueue.map((request) => (
-                    <div key={request.id} className={`p-4 rounded-lg border-2 ${
-                      request.status === 'called' ? 'border-warning bg-warning/5' :
-                      request.status === 'picked_up' ? 'border-secondary bg-secondary/5' :
-                      'border-border'
-                    }`}>
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="font-semibold">{request.parentName}</span>
-                            <Badge variant={
-                              request.status === 'waiting' ? 'secondary' :
-                              request.status === 'called' ? 'default' :
-                              'outline'
-                            }>
-                              {request.status === 'waiting' ? 'في الانتظار' :
-                               request.status === 'called' ? 'تم النداء' :
-                               'تم الاستلام'}
-                            </Badge>
-                            <span className="text-sm text-muted-foreground">#{request.position}</span>
-                          </div>
-                          
-                          <p className="text-sm text-muted-foreground mb-2">
-                            الطلاب: {request.students.join(', ')}
-                          </p>
-                          
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span>⏰ وصل الساعة: {request.arrivalTime}</span>
-                            <span>🚗 {request.carInfo.description}</span>
-                            <span>📍 موقف: {request.carInfo.location}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          {request.status === 'called' && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleMarkPickedUp(request.id)}
-                              className="gap-1"
-                            >
-                              <CheckCircle size={14} />
-                              تأكيد الاستلام
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <CardContent className="p-8 text-center">
+                <ChartBar size={48} className="mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">التقارير والإحصائيات قيد التطوير</p>
               </CardContent>
             </Card>
           </TabsContent>
-
-          {/* Early Dismissal Requests */}
-          <TabsContent value="early-requests" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>طلبات الاستئذان المبكر</CardTitle>
-                <CardDescription>
-                  مراجعة والموافقة على طلبات الاستئذان المبكر من أولياء الأمور
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {earlyDismissalRequests.map((request) => (
-                    <div key={request.id} className="p-4 border rounded-lg">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <div className="flex items-center gap-3 mb-1">
-                            <span className="font-semibold">{request.studentName}</span>
-                            <Badge variant={
-                              request.reasonType === 'medical' ? 'destructive' :
-                              request.reasonType === 'family' ? 'secondary' :
-                              'default'
-                            }>
-                              {request.reasonType === 'medical' ? 'طبي' :
-                               request.reasonType === 'family' ? 'عائلي' : 'أخرى'}
-                            </Badge>
-                            <Badge variant={
-                              request.status === 'pending' ? 'default' :
-                              request.status === 'approved' ? 'secondary' :
-                              'destructive'
-                            }>
-                              {request.status === 'pending' ? 'في الانتظار' :
-                               request.status === 'approved' ? 'تم القبول' : 'مرفوض'}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {request.grade} - {request.section} • ولي الأمر: {request.parentName}
-                          </p>
-                        </div>
-                        <span className="text-sm text-muted-foreground">⏰ {request.requestTime}</span>
-                      </div>
-                      
-                      <p className="mb-3 p-3 bg-muted/30 rounded text-sm">
-                        <strong>السبب:</strong> {request.reason}
-                      </p>
-                      
-                      {request.status === 'pending' && (
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleApproveEarlyRequest(request.id)}
-                            className="gap-1"
-                          >
-                            <CheckCircle size={14} />
-                            موافقة
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleRejectEarlyRequest(request.id)}
-                            className="gap-1"
-                          >
-                            <XCircle size={14} />
-                            رفض
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Sound System Tab */}
-          <TabsContent value="sound-system" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <SoundSystem 
-                queue={activeQueue}
-                onStudentCalled={handleStudentCalled}
-              />
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Volume2 size={20} />
-                    إعدادات النظام الصوتي
-                  </CardTitle>
-                  <CardDescription>
-                    إدارة إعدادات البث والنداء
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span>مستوى الصوت</span>
-                      <Badge>80%</Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>سرعة النطق</span>
-                      <Badge>عادي</Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>نوع الصوت</span>
-                      <Badge>أنثى - واضح</Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>تكرار النداء</span>
-                      <Badge>مرتين</Badge>
-                    </div>
-                    
-                    <Button className="w-full mt-4">
-                      اختبار النظام الصوتي
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-          <TabsContent value="reports" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 size={20} />
-                  التقارير والإحصائيات
-                </CardTitle>
-                <CardDescription>
-                  تقارير الحضور والانصراف والإحصائيات الشاملة
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <Calendar size={48} className="mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">التقارير قيد التطوير</h3>
-                  <p className="text-muted-foreground">
-                    سيتم إضافة تقارير شاملة للحضور والانصراف قريباً
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* System Settings */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings size={20} />
-                    إعدادات النظام
-                  </CardTitle>
-                  <CardDescription>
-                    إدارة إعدادات المدرسة والنظام
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span>نطاق التفعيل التلقائي</span>
-                      <Badge>100 متر</Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>وقت الانصراف</span>
-                      <Badge>12:30 - 13:00</Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>الحد الأقصى للانتظار</span>
-                      <Badge>20 دقيقة</Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>الموافقة على الاستئذان</span>
-                      <Badge>تلقائية للطوارئ</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Best Practices */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CheckCircle size={20} />
-                    أفضل الممارسات للانصراف الآمن
-                  </CardTitle>
-                  <CardDescription>
-                    إرشادات لضمان عملية انصراف سلسة وآمنة
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-2">
-                        <CheckCircle size={16} className="text-secondary mt-0.5 flex-shrink-0" />
-                        <div className="text-sm">
-                          <strong>التفعيل التلقائي:</strong> يتم تفعيل طلب الانصراف تلقائياً عند دخول ولي الأمر نطاق 100 متر من المدرسة
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-2">
-                        <CheckCircle size={16} className="text-secondary mt-0.5 flex-shrink-0" />
-                        <div className="text-sm">
-                          <strong>الطابور المنظم:</strong> ترتيب الطلاب حسب وقت وصول أولياء الأمور لضمان العدالة
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-2">
-                        <CheckCircle size={16} className="text-secondary mt-0.5 flex-shrink-0" />
-                        <div className="text-sm">
-                          <strong>التحقق المزدوج:</strong> تأكيد هوية المستلم وموافقة ولي الأمر قبل تسليم الطالب
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-2">
-                        <CheckCircle size={16} className="text-secondary mt-0.5 flex-shrink-0" />
-                        <div className="text-sm">
-                          <strong>الإشعارات الذكية:</strong> تنبيه المعلمين تلقائياً لتحضير الطلاب قبل نداءهم
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-2">
-                        <CheckCircle size={16} className="text-secondary mt-0.5 flex-shrink-0" />
-                        <div className="text-sm">
-                          <strong>النداء الواضح:</strong> استخدام تقنية تحويل النص لصوت باللغة العربية الواضحة
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-2">
-                        <CheckCircle size={16} className="text-secondary mt-0.5 flex-shrink-0" />
-                        <div className="text-sm">
-                          <strong>التوثيق الرقمي:</strong> حفظ جميع عمليات الانصراف مع الوقت والتاريخ والمستلم
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Workflow Guide */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <List size={20} />
-                  دليل سير العمل المتكامل
-                </CardTitle>
-                <CardDescription>
-                  شرح تفصيلي للدورة الكاملة لنظام الانصراف الذكي
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {/* Regular Dismissal Workflow */}
-                  <div>
-                    <h4 className="font-semibold mb-3 text-primary">🔄 سير العمل للانصراف العادي:</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center">1</Badge>
-                        <span>ولي الأمر يصل للمدرسة ويدخل النطاق الجغرافي (100م)</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center">2</Badge>
-                        <span>التطبيق يفعّل طلب الانصراف تلقائياً في وقت الانصراف</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center">3</Badge>
-                        <span>ولي الأمر يختار الأبناء ويؤكد الطلب</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center">4</Badge>
-                        <span>النظام يضيف الطالب للطابور حسب وقت الوصول</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center">5</Badge>
-                        <span>النظام ينادي الطلاب بالترتيب عبر النظام الصوتي</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center">6</Badge>
-                        <span>ولي الأمر يؤكد الاستلام في التطبيق</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Early Dismissal Workflow */}
-                  <div>
-                    <h4 className="font-semibold mb-3 text-warning">⏰ سير العمل للاستئذان المبكر:</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center">1</Badge>
-                        <span>ولي الأمر يرسل طلب استئذان مع السبب والمرفقات</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center">2</Badge>
-                        <span>مدير المدرسة يراجع ويوافق/يرفض الطلب</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center">3</Badge>
-                        <span>النظام يحدد المعلم المسؤول حسب الجدول الدراسي</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center">4</Badge>
-                        <span>المعلم يستلم إشعار ويحضّر الطالب للانصراف</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center">5</Badge>
-                        <span>الطالب يتوجه للبوابة ويُسلم لولي الأمر</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center">6</Badge>
-                        <span>النظام يوثّق عملية الاستلام رقمياً</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          <TabsContent value="settings">{renderSettings()}</TabsContent>
         </Tabs>
       </div>
+
+      {/* Approval Dialog */}
+      <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>مراجعة طلب الاستئذان المبكر</DialogTitle>
+            <DialogDescription>
+              راجع تفاصيل الطلب واتخذ القرار المناسب
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedRequest && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>الطالب</Label>
+                  <p className="font-medium">{selectedRequest.studentData.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedRequest.studentData.grade} - {selectedRequest.studentData.section}
+                  </p>
+                </div>
+                <div>
+                  <Label>ولي الأمر</Label>
+                  <p className="font-medium">{selectedRequest.parentName}</p>
+                </div>
+              </div>
+              
+              <div>
+                <Label>نوع السبب</Label>
+                <Badge variant={selectedRequest.reasonCategory === 'medical' ? 'destructive' : 'secondary'}>
+                  {selectedRequest.reasonCategory === 'medical' ? 'طبي' : 
+                   selectedRequest.reasonCategory === 'family' ? 'عائلي' : 'أخرى'}
+                </Badge>
+              </div>
+              
+              <div>
+                <Label>تفاصيل السبب</Label>
+                <p className="text-sm bg-muted p-3 rounded">{selectedRequest.reason}</p>
+              </div>
+              
+              <div>
+                <Label>ملاحظات الموافقة/الرفض</Label>
+                <Textarea
+                  value={approvalNotes}
+                  onChange={(e) => setApprovalNotes(e.target.value)}
+                  placeholder="اكتب ملاحظات أو سبب الرفض..."
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowApprovalDialog(false)}
+            >
+              إلغاء
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => handleApproveEarlyDismissal(selectedRequest?.id, false)}
+            >
+              <X size={16} className="ml-2" />
+              رفض
+            </Button>
+            <Button 
+              onClick={() => handleApproveEarlyDismissal(selectedRequest?.id, true)}
+            >
+              <Check size={16} className="ml-2" />
+              موافقة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sound System Component */}
+      <SoundSystem 
+        enabled={schoolSettings.soundSystemEnabled}
+        onAnnouncement={(message) => toast.info(`تم البث: ${message}`)}
+      />
     </div>
   )
 }

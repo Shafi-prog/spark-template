@@ -1,174 +1,85 @@
-# نظام إدارة حضور وانصراف الطلاب الذكي - PRD محدث
+# Smart School Dismissal Management System - PRD
 
 ## Core Purpose & Success
-
-**Mission Statement**: نظام ذكي متكامل لإدارة عملية انصراف الطلاب في المدارس السعودية يربط بين أولياء الأمور والمدرسة والمعلمين لضمان عملية انصراف آمنة ومنظمة وسريعة.
-
-**Success Indicators**:
-- تقليل وقت انتظار أولياء الأمور من 30 دقيقة إلى أقل من 5 دقائق
-- تحقيق نسبة رضا 95%+ من أولياء الأمور والمدرسة
-- تقليل الازدحام والفوضى عند بوابات المدارس بنسبة 80%
-- ضمان أمان تسليم الطلاب 100% للأشخاص المصرح لهم
-
-**Experience Qualities**: 
-- **بساطة**: واجهات سهلة الاستخدام لجميع المستخدمين
-- **موثوقية**: نظام آمن وقابل للاعتماد عليه
-- **سرعة**: استجابة فورية وعمليات سريعة
+- **Mission Statement**: Transform traditional chaotic school pickup into a streamlined, secure, and intelligent dismissal management system for Saudi schools.
+- **Success Indicators**: 
+  - Reduce pickup wait times from 20-30 minutes to under 5 minutes
+  - 95% parent satisfaction with digital process
+  - Zero unauthorized student releases
+  - 90% reduction in traffic congestion at school gates
+- **Experience Qualities**: Secure, Efficient, Intuitive
 
 ## Project Classification & Approach
+- **Complexity Level**: Complex Application (multi-user roles, real-time coordination, location services)
+- **Primary User Activity**: Coordinating (real-time communication between parents, school staff, and teachers)
 
-**Complexity Level**: Complex Application (نظام متكامل متعدد الأطراف)
-- تطبيق ولي الأمر (Mobile)  
-- لوحة تحكم المدرسة (Web Dashboard)
-- تطبيق المعلم (Mobile/PWA)
-- نظام البث الصوتي (Desktop Agent)
-
-**Primary User Activity**: 
-- **أولياء الأمور**: طلب انصراف ومتابعة الحالة
-- **إدارة المدرسة**: موافقة على الطلبات وإدارة العملية
-- **المعلمون**: استلام إشعارات وتحضير الطلاب
-- **النظام**: تنظيم الطوابير والنداء الصوتي
+## Core Problem Analysis
+Traditional school dismissal in Saudi Arabia involves:
+- Parents waiting 20-30 minutes in cars under harsh sun
+- Chaotic manual calling system using microphones
+- Security risks with unauthorized pickups
+- Traffic congestion and safety hazards
+- No systematic tracking of student whereabouts
 
 ## Essential Features
 
-### 1. تطبيق ولي الأمر
-**الغرض**: تمكين أولياء الأمور من طلب انصراف أبنائهم بسهولة
-**المميزات الأساسية**:
-- طلب انصراف عادي (GPS-triggered)
-- طلب استئذان مبكر مع المبررات
-- إدارة المفوضين
-- متابعة حالة الطلاب وموقعهم في الطابور
-- إشعارات فورية
+### Parent App
+- **GPS-triggered dismissal requests** - Auto-activate within 50m of school
+- **Early dismissal with approval workflow** - Medical/family emergencies
+- **Authorized driver management** - Allow family members/drivers to pickup
+- **Real-time queue tracking** - See position and estimated wait time
+- **Multi-child coordination** - Handle multiple students efficiently
 
-### 2. لوحة تحكم المدرسة  
-**الغرض**: إدارة عملية الانصراف ومراقبة النظام
-**المميزات الأساسية**:
-- موافقة/رفض طلبات الاستئذان المبكر
-- مراقبة طوابير الانصراف المباشرة
-- إدارة بيانات الطلاب والمعلمين
-- تقارير وإحصائيات شاملة
-- إعدادات النظام والإشعارات
+### School Admin Dashboard  
+- **Complete dismissal oversight** - Monitor all active requests
+- **Approval workflow management** - Review and approve early dismissals
+- **Staff delegation system** - Assign approval permissions
+- **Location and settings management** - Configure school parameters
+- **Analytics and reporting** - Track patterns and performance
 
-### 3. تطبيق المعلم
-**الغرض**: تسهيل تحضير الطلاب للانصراف
-**المميزات الأساسية**:
-- استلام إشعارات الاستئذان المعتمدة
-- عرض جدوله الدراسي
-- تأكيد إرسال الطلاب للبوابة
-- التواصل مع الإدارة
-
-### 4. نظام البث الصوتي
-**الغرض**: نداء الطلاب بشكل منظم وواضح
-**المميزات الأساسية**:
-- تحويل النص العربي لصوت
-- البث على مكبرات الصوت
-- إدارة قوائم النداء
+### Teacher App
+- **Student preparation alerts** - Get notified when students need to leave
+- **Class roster management** - Track which students left early
+- **Real-time dismissal coordination** - Confirm student departures
+- **Schedule integration** - Know current periods and locations
 
 ## Design Direction
 
 ### Visual Tone & Identity
-**Emotional Response**: الثقة والأمان والكفاءة - يجب أن يشعر المستخدمون بالثقة في النظام والراحة في استخدامه
-
-**Design Personality**: 
-- **مهني وموثوق**: يعكس جدية النظام التعليمي
-- **ودود ومألوف**: يناسب أولياء الأمور من جميع الأعمار والخلفيات
-- **حديث وعصري**: يواكب التطور التقني
-
-**Visual Metaphors**: 
-- المدرسة كمنزل آمن
-- الطريق والمسار للدلالة على رحلة الطالب
-- الدائرة للوحدة والتكامل
+- **Emotional Response**: Trust, efficiency, and calm control during typically stressful pickup times
+- **Design Personality**: Professional yet approachable, with clear authority indicators for security
+- **Visual Metaphors**: Traffic flow, digital queues, secure handoffs
+- **Simplicity Spectrum**: Clean and minimal to reduce cognitive load during time-sensitive operations
 
 ### Color Strategy
-**Color Scheme Type**: Triadic مع ألوان متكاملة
-
-**Primary Color**: Deep Blue `oklch(0.45 0.15 240)` 
-- يمثل الثقة والأمان والسلطة التعليمية
-- مناسب للثقافة السعودية ومرتبط بالجدية
-
-**Secondary Color**: Sage Green `oklch(0.55 0.12 140)`
-- يمثل النمو والتعلم والطبيعة
-- يضيف دفءاً للتصميم
-
-**Accent Color**: Soft Purple `oklch(0.60 0.20 220)`
-- للتفاعلات المهمة والحالات النشطة
-- يجذب الانتباه بدون إزعاج
-
-**Warning Color**: Warm Orange `oklch(0.65 0.14 60)`
-- للحالات التي تحتاج انتباه (انتظار، تنبيه)
-
-**Success Color**: Fresh Green `oklch(0.55 0.12 140)`
-- لتأكيد العمليات الناجحة
+- **Color Scheme Type**: Triadic (blue primary, green secondary, orange accent)
+- **Primary Color**: Deep blue (oklch(0.45 0.15 240)) - represents trust, security, educational authority
+- **Secondary Colors**: Forest green (oklch(0.55 0.12 140)) - represents approval, safety, go-ahead states
+- **Accent Color**: Warm orange (oklch(0.65 0.14 50)) - represents attention, pending states, important actions
+- **Color Psychology**: Blue builds trust with parents and staff, green provides clear positive feedback, orange ensures important actions aren't missed
+- **Foreground/Background Pairings**: 
+  - White backgrounds with dark blue text (4.8:1 contrast)
+  - Blue backgrounds with white text (10.2:1 contrast)
+  - Orange accent with white text (4.7:1 contrast)
 
 ### Typography System
-**Font Selection**: Cairo - خط عربي حديث وواضح
-- **Primary Font**: Cairo (Google Fonts)
-- يدعم العربية بشكل ممتاز
-- متدرج الأوزان (300, 400, 500, 600, 700)
-- سهل القراءة على الشاشات
+- **Font Pairing Strategy**: Single font family (Cairo) with varied weights for hierarchy
+- **Primary Font**: Cairo - specifically designed for Arabic with excellent Latin support
+- **Typographic Hierarchy**: 
+  - Headers: Cairo 600-700 weight
+  - Body: Cairo 400 weight  
+  - Captions: Cairo 300 weight
+- **Typography Consistency**: Maintain 1.5x line height for body text, 1.2x for headers
 
-**Typographic Hierarchy**:
-- H1: 28px/Bold - العناوين الرئيسية
-- H2: 24px/SemiBold - العناوين الفرعية  
-- H3: 20px/Medium - عناوين الأقسام
-- Body: 16px/Regular - النص العادي
-- Caption: 14px/Regular - النصوص التوضيحية
+### Accessibility & Readability
+- **Contrast Goal**: WCAG AA compliance minimum (4.5:1 for normal text, 3:1 for large text)
+- **Arabic Typography**: Proper RTL layout with optimized font rendering
+- **Large Touch Targets**: Minimum 44px touch areas for all interactive elements
+- **Clear Visual Hierarchy**: Distinguished states for pending, approved, active, and completed requests
 
-### Component Design
-**Button Hierarchy**:
-- Primary: للإجراءات الأساسية (طلب انصراف)
-- Secondary: للإجراءات الثانوية (تعديل، إلغاء)
-- Ghost: للإجراءات المساعدة
-
-**Card Design**:
-- بطاقات الطلاب: صور دائرية + معلومات منظمة
-- بطاقات الحالة: مؤشرات ملونة + أيقونات واضحة
-- بطاقات الإحصائيات: أرقام كبيرة + رسوم بيانية صغيرة
-
-### Animation & Interaction
-**Motion Purpose**:
-- **Feedback Animations**: تأكيد الإجراءات (200-300ms)
-- **State Transitions**: انتقالات سلسة بين الحالات
-- **Loading States**: مؤشرات تحميل مخصصة للعلامة التجارية
-- **Status Updates**: تحديث حالة الطابور بحركة لطيفة
-
-**Physics**: حركة طبيعية مع تسارع وتباطؤ واقعي
-
-## Implementation Strategy
-
-### Multi-App Architecture
-```
-نظام متكامل يتكون من:
-├── Parent Mobile App (React Native/PWA)
-├── School Admin Dashboard (React Web)
-├── Teacher App (PWA)
-└── Sound System Agent (Desktop)
-```
-
-### Workflow Integration
-1. **ولي الأمر** يرسل طلب انصراف/استئذان
-2. **النظام** يتحقق من الموقع والوقت
-3. **الإدارة** توافق على الطلبات (للاستئذان المبكر)
-4. **النظام** يحدد المعلم المسؤول حسب الجدول
-5. **المعلم** يستلم الإشعار ويحضر الطالب
-6. **النظام** ينظم الطابور وينادي بالترتيب
-7. **ولي الأمر** يؤكد الاستلام
-
-### Smart Features
-- **GPS Geofencing**: تفعيل تلقائي عند الاقتراب
-- **Intelligent Queuing**: ترتيب ذكي حسب الوقت والأولوية
-- **Auto Teacher Assignment**: تحديد المعلم حسب الجدول والحصة
-- **Real-time Updates**: تحديثات فورية لجميع الأطراف
-
-## Success Metrics
-- **Usage**: عدد المدارس والمستخدمين النشطين
-- **Efficiency**: متوسط وقت الانصراف
-- **Satisfaction**: تقييمات أولياء الأمور والمدارس
-- **Safety**: نسبة التسليم الآمن للطلاب
-- **Adoption**: معدل اعتماد النظام في المدارس
-
-## Risk Mitigation
-- **Technical**: نظام backup للبيانات الحساسة
-- **Security**: تشفير البيانات والتحقق متعدد المراحل
-- **User Experience**: تدريب وتوجيه للمستخدمين الجدد
-- **Operational**: دعم فني متخصص للمدارس
+## Implementation Considerations
+- **Real-time Synchronization**: WebSocket connections for live updates across all apps
+- **GPS Integration**: Geofencing for automatic request activation
+- **Offline Capability**: Critical functions work without internet
+- **Multi-language Support**: Arabic primary, English secondary
+- **Security First**: All student transfers require explicit verification

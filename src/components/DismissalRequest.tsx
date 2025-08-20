@@ -22,11 +22,13 @@ interface Student {
 
 interface DismissalRequestProps {
   students: Student[]
+  user?: any
+  isAuthorizedDriver?: boolean
   onBack: () => void
-  onSubmit: (selectedStudents: string[], carInfo: any) => void
+  onSubmit: (selectedStudents: string[], carInfo: any, requestType?: string) => void
 }
 
-export function DismissalRequest({ students, onBack, onSubmit }: DismissalRequestProps) {
+export function DismissalRequest({ students, user, isAuthorizedDriver = false, onBack, onSubmit }: DismissalRequestProps) {
   const [selectedStudents, setSelectedStudents] = useState<string[]>([])
   const [carLocation, setCarLocation] = useState('')
   const [carType, setCarType] = useState('')
@@ -61,10 +63,21 @@ export function DismissalRequest({ students, onBack, onSubmit }: DismissalReques
       type: carType,
       color: carColor,
       plateNumber: plateNumber,
-      notes: notes
+      notes: notes,
+      requesterInfo: isAuthorizedDriver ? {
+        type: 'authorized_driver',
+        driverName: user?.name,
+        driverPhone: user?.phone,
+        relationship: user?.relationship,
+        nationalId: user?.nationalId
+      } : {
+        type: 'parent',
+        parentName: user?.name,
+        parentPhone: user?.phone
+      }
     }
     
-    onSubmit(selectedStudents, carInfo)
+    onSubmit(selectedStudents, carInfo, isAuthorizedDriver ? 'authorized_pickup' : 'regular')
   }
 
   return (
@@ -74,7 +87,9 @@ export function DismissalRequest({ students, onBack, onSubmit }: DismissalReques
           <Button variant="ghost" size="icon" onClick={onBack}>
             <ArrowRight size={20} />
           </Button>
-          <h1 className="text-xl font-bold text-foreground">طلب انصراف</h1>
+          <h1 className="text-xl font-bold text-foreground">
+            {isAuthorizedDriver ? 'طلب استلام الطلاب' : 'طلب انصراف'}
+          </h1>
         </div>
       </header>
 
@@ -83,7 +98,7 @@ export function DismissalRequest({ students, onBack, onSubmit }: DismissalReques
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>اختر الأبناء للانصراف</span>
+              <span>{isAuthorizedDriver ? 'اختر الطلاب للاستلام' : 'اختر الأبناء للانصراف'}</span>
               <Badge variant="outline">
                 {selectedStudents.length} من {availableStudents.length}
               </Badge>
@@ -255,7 +270,7 @@ export function DismissalRequest({ students, onBack, onSubmit }: DismissalReques
             className="flex-1 bg-primary hover:bg-primary/90"
           >
             <Car size={16} className="ml-2" />
-            إرسال الطلب
+            {isAuthorizedDriver ? 'طلب الاستلام' : 'إرسال الطلب'}
           </Button>
         </div>
       </footer>

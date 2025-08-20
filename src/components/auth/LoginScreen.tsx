@@ -18,28 +18,59 @@ export function LoginScreen({ onLogin, onBack }: LoginScreenProps) {
 
   // Demo users for different roles
   const demoUsers = {
-    '+966501234567': {
+    '+966501111111': {
       id: 'parent-1',
-      name: 'أحمد محمد السعودي',
+      name: 'أحمد السعودي',
       role: 'parent',
-      phone: '+966501234567',
-      children: ['student-1', 'student-2']
+      phone: '+966501111111',
+      nationalId: '1111111111',
+      children: ['student-1', 'student-2'],
+      authorizedDrivers: ['driver-1'],
+      verified: true
     },
-    '+966501234568': {
+    '+966502222222': {
+      id: 'driver-1',
+      name: 'خالد السعودي',
+      role: 'authorized_driver',
+      phone: '+966502222222',
+      nationalId: '2222222222',
+      relationship: 'أخ',
+      authorizedBy: 'parent-1',
+      authorizedStudents: ['student-1', 'student-2'],
+      verified: true
+    },
+    '+966501234567': {
       id: 'teacher-1', 
       name: 'أستاذة مريم العتيبي',
       role: 'teacher',
+      phone: '+966501234567',
+      schoolId: 'school-1',
+      classes: [{ grade: 'الصف الثالث', section: 'أ', isPrimary: true }],
+      subjects: ['الرياضيات', 'العلوم']
+    },
+    '+966501234568': {
+      id: 'teacher-2',
+      name: 'أستاذة نورا الأحمد',
+      role: 'teacher',
       phone: '+966501234568',
       schoolId: 'school-1',
-      classes: [{ grade: 'الصف الثالث', section: 'أ' }]
+      classes: [{ grade: 'الصف الأول', section: 'ب', isPrimary: true }],
+      subjects: ['اللغة العربية', 'التربية الإسلامية']
     },
-    '+966501234569': {
+    '+966503333333': {
       id: 'admin-1',
-      name: 'الأستاذ خالد الأحمد',
-      role: 'school_admin', 
-      phone: '+966501234569',
+      name: 'سارة الفهد',
+      role: 'school_admin',
+      phone: '+966503333333',
       schoolId: 'school-1',
-      position: 'مدير المدرسة'
+      position: 'مديرة المدرسة',
+      permissions: {
+        canApproveEarlyDismissal: true,
+        canManageSettings: true,
+        canViewReports: true,
+        canManageStaff: true,
+        canDelegatePermissions: true
+      }
     }
   }
 
@@ -129,10 +160,12 @@ export function LoginScreen({ onLogin, onBack }: LoginScreenProps) {
 
               <div className="text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg">
                 <p className="font-medium mb-2">للتجربة استخدم:</p>
-                <p>• +966501234567 (ولي أمر)</p>
-                <p>• +966501234568 (معلمة)</p>
-                <p>• +966501234569 (إدارة)</p>
-                <p className="mt-2 text-xs">رمز التحقق: 123456</p>
+                <p>• +966501111111 (ولي أمر)</p>
+                <p>• +966502222222 (سائق مفوض)</p>
+                <p>• +966501234567 (معلمة الصف الثالث)</p>
+                <p>• +966501234568 (معلمة الصف الأول)</p>
+                <p>• +966503333333 (مديرة المدرسة)</p>
+                <p className="mt-2 text-xs font-medium">رمز التحقق: 123456</p>
               </div>
             </div>
           ) : (
