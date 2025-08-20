@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { toast, Toaster } from 'sonner'
 
@@ -10,17 +10,45 @@ import { LoginScreen } from './components/auth/LoginScreen'
 import { UserSelection } from './components/auth/UserSelection'
 import { LanguageSwitcher } from './components/ui/LanguageSwitcher'
 
+// Enhanced Components
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { LazyLoad, LoadingStates } from './components/common/LazyLoad'
+import { AppProvider } from './contexts/AppContext'
+
 // Hooks
 import { useLanguage } from './hooks/useLanguage'
+import { useNetwork } from './hooks/useNetwork'
+import { useAsync } from './hooks/useAsync'
 
-function App() {
-  const [currentUser, setCurrentUser] = useKV('current_user', null)
-  const [authStep, setAuthStep] = useState('selection') // 'selection', 'login', 'app'
+// Services
+import { apiService } from './services/api'
+
+// Types
+import type { User } from './types'
+
+// Lazy load main app components for better performance
+const LazyParentApp = React.lazy(() => import('./apps/ParentApp').then(module => ({ default: module.ParentApp })))
+const LazySchoolDashboard = React.lazy(() => import('./apps/SchoolDashboard').then(module => ({ default: module.SchoolDashboard })))
+const LazyTeacherApp = React.lazy(() => import('./apps/TeacherApp').then(module => ({ default: module.TeacherApp })))
+
+function AppContent() {
+  const [currentUser, setCurrentUser] = useKV<User | null>('current_user', null)
+  const [authStep, setAuthStep] = useState<'selection' | 'login' | 'app'>('selection')
   const { t, language } = useLanguage()
+  const { isOnline, isSlowConnection, retry } = useNetwork()
 
-  // Initialize comprehensive demo data
+  // Initialize demo data with proper error handling
+  const { loading: initializingData, error: initError, execute: initializeData } = useAsync(async () => {
+    await initDemoData()
+  }, false)
+
+  // Initialize demo data on mount
   useEffect(() => {
-    const initDemoData = async () => {
+    initializeData()
+  }, [])
+
+  // Initialize comprehensive demo data with enhanced error handling
+  const initDemoData = async () => {
       try {
         // Check if demo data already exists
         const existingSchool = await spark.kv.get('demo_school')
@@ -233,8 +261,13 @@ function App() {
         await spark.kv.set('teacher_notifications', demoNotifications.slice(0, 2))
         await spark.kv.set('parent_notifications_parent-1', [demoNotifications[0]])
         await spark.kv.set('global_notifications', [demoNotifications[2]])
+        
+        // Initialize API cache
+        apiService.clearCache()
+        
       } catch (error) {
         console.error('Error initializing demo data:', error)
+        throw new Error('فشل في تحميل البيانات الأولية')
       }
     }
 
@@ -246,7 +279,7 @@ function App() {
     // In real app, this would set the user type for login context
   }
 
-  const handleLogin = (userData: any) => {
+  const handleLogin = (userData: User) => {
     setCurrentUser(userData)
     setAuthStep('app')
     toast.success(`${t('auth.welcome')} ${userData.name}`)
@@ -255,10 +288,45 @@ function App() {
   const handleLogout = () => {
     setCurrentUser(null)
     setAuthStep('selection')
+    // Clear sensitive cache data on logout
+    apiService.invalidateCache('notifications|requests|queue')
     toast.info(t('status.success'))
   }
 
   const renderApp = () => {
+    // Show loading state during initialization
+    if (initializingData) {
+      return <LoadingStates.Dashboard />
+    }
+
+    // Show error state if initialization failed
+    if (initError) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-destructive mb-4">فشل في تحميل التطبيق</h1>
+            <p className="text-muted-foreground mb-4">حدث خطأ أثناء تحميل البيانات الأولية</p>
+            <div className="flex gap-2 justify-center">
+              <button 
+                onClick={() => initializeData()}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+              >
+                إعادة المحاولة
+              </button>
+              {!isOnline && (
+                <button 
+                  onClick={retry}
+                  className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90"
+                >
+                  فحص الاتصال
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )
+    }
+
     if (!currentUser) {
       switch (authStep) {
         case 'selection':
@@ -270,16 +338,28 @@ function App() {
       }
     }
 
-    // Render appropriate app based on user role
+    // Render appropriate app based on user role with lazy loading and error boundaries
     switch (currentUser.role) {
       case 'parent':
       case 'authorized_driver':
-        return <ParentApp user={currentUser} onLogout={handleLogout} />
+        return (
+          <LazyLoad fallback={<LoadingStates.Dashboard />}>
+            <LazyParentApp user={currentUser} onLogout={handleLogout} />
+          </LazyLoad>
+        )
       case 'school_admin':
       case 'principal':
-        return <SchoolDashboard user={currentUser} onLogout={handleLogout} />
+        return (
+          <LazyLoad fallback={<LoadingStates.Dashboard />}>
+            <LazySchoolDashboard user={currentUser} onLogout={handleLogout} />
+          </LazyLoad>
+        )
       case 'teacher':
-        return <TeacherApp user={currentUser} onLogout={handleLogout} />
+        return (
+          <LazyLoad fallback={<LoadingStates.Dashboard />}>
+            <LazyTeacherApp user={currentUser} onLogout={handleLogout} />
+          </LazyLoad>
+        )
       default:
         return <div className="p-4 text-center">نوع المستخدم غير مدعوم</div>
     }
@@ -292,7 +372,21 @@ function App() {
         <LanguageSwitcher />
       </div>
       
+      {/* Network status indicator */}
+      {!isOnline && (
+        <div className="bg-destructive text-destructive-foreground p-2 text-center text-sm">
+          لا يوجد اتصال بالإنترنت - العمل في الوضع غير المتصل
+        </div>
+      )}
+      
+      {isSlowConnection && (
+        <div className="bg-warning text-warning-foreground p-2 text-center text-sm">
+          اتصال إنترنت بطيء - قد تتأخر بعض العمليات
+        </div>
+      )}
+      
       {renderApp()}
+      
       <Toaster 
         position="top-center"
         toastOptions={{
@@ -305,6 +399,17 @@ function App() {
         }}
       />
     </div>
+  )
+}
+
+// Main App component with providers and error boundary
+function App() {
+  return (
+    <ErrorBoundary level="page">
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </ErrorBoundary>
   )
 }
 
