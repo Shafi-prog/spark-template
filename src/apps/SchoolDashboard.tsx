@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch"
 // Components
 import { SoundSystem } from '../components/SoundSystem'
 import { AnalyticsReports } from '../components/analytics/AnalyticsReports'
+import { SystemHealthChecker } from '../components/SystemHealthChecker'
 
 // Icons
 import { 
@@ -45,7 +46,8 @@ import {
   Student as StudentIcon,
   GraduationCap,
   Warning,
-  ChartBar
+  ChartBar,
+  Database
 } from "@phosphor-icons/react"
 
 interface SchoolDashboardProps {
@@ -609,7 +611,7 @@ export function SchoolDashboard({ user, onLogout }: SchoolDashboardProps) {
       {/* Main Content */}
       <div className="p-6">
         <Tabs value={currentTab} onValueChange={setCurrentTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 size={16} />
               نظرة عامة
@@ -627,6 +629,10 @@ export function SchoolDashboard({ user, onLogout }: SchoolDashboardProps) {
               <ChartBar size={16} />
               التقارير
             </TabsTrigger>
+            <TabsTrigger value="system-health" className="flex items-center gap-2">
+              <Database size={16} />
+              صحة النظام
+            </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings size={16} />
               الإعدادات
@@ -637,6 +643,9 @@ export function SchoolDashboard({ user, onLogout }: SchoolDashboardProps) {
           <TabsContent value="early-dismissal">{renderEarlyDismissals()}</TabsContent>
           <TabsContent value="reports">
             <AnalyticsReports onBack={() => setCurrentTab('overview')} />
+          </TabsContent>
+          <TabsContent value="system-health">
+            <SystemHealthChecker userRole="school_admin" />
           </TabsContent>
           <TabsContent value="settings">{renderSettings()}</TabsContent>
         </Tabs>
