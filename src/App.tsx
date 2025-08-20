@@ -1,119 +1,130 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { Header } from './components/Header'
-import { StudentGrid } from './components/StudentGrid'
-import { StatusBar } from './components/StatusBar'
-import { QuickActions } from './components/QuickActions'
-import { DismissalRequest } from './components/DismissalRequest'
-import { EarlyDismissal } from './components/EarlyDismissal'
-import { DelegateManagement } from './components/DelegateManagement'
 import { toast, Toaster } from 'sonner'
 
+// App Components
+import { ParentApp } from './apps/ParentApp'
+import { SchoolDashboard } from './apps/SchoolDashboard'
+import { TeacherApp } from './apps/TeacherApp'
+import { LoginScreen } from './components/auth/LoginScreen'
+import { UserSelection } from './components/auth/UserSelection'
+
 function App() {
-  const [currentView, setCurrentView] = useState('home')
-  const [user] = useKV('user', {
-    name: 'أحمد محمد السعودي',
-    phone: '+966501234567',
-    id: '1234567890',
-    distanceFromSchool: 1200
-  })
+  const [currentUser, setCurrentUser] = useKV('current_user', null)
+  const [authStep, setAuthStep] = useState('selection') // 'selection', 'login', 'app'
 
-  const [students] = useKV('students', [
-    {
-      id: '1',
-      name: 'محمد أحمد',
-      nameEn: 'Mohammed Ahmed', 
-      grade: 'الصف الثالث',
-      section: 'أ',
-      school: 'مدرسة النور الابتدائية',
-      photo: null,
-      status: 'present',
-      canRequestDismissal: true
-    },
-    {
-      id: '2', 
-      name: 'فاطمة أحمد',
-      nameEn: 'Fatimah Ahmed',
-      grade: 'الصف الأول',
-      section: 'ب', 
-      school: 'مدرسة النور الابتدائية',
-      photo: null,
-      status: 'present',
-      canRequestDismissal: true
+  // Initialize demo data
+  useEffect(() => {
+    // Initialize some demo data for testing
+    const initDemoData = async () => {
+      const demoSchool = {
+        id: 'school-1',
+        name: 'مدرسة النور الابتدائية',
+        location: { lat: 24.7136, lng: 46.6753 },
+        geofenceRadius: 100,
+        dismissalTimes: {
+          primary: '12:30',
+          intermediate: '13:00'
+        }
+      }
+
+      const demoStudents = [
+        {
+          id: 'student-1',
+          name: 'محمد أحمد السعودي',
+          nameEn: 'Mohammed Ahmed',
+          grade: 'الصف الثالث',
+          section: 'أ',
+          schoolId: 'school-1',
+          currentTeacherId: 'teacher-1',
+          status: 'present',
+          guardianId: 'parent-1'
+        },
+        {
+          id: 'student-2',
+          name: 'فاطمة أحمد السعودي', 
+          nameEn: 'Fatimah Ahmed',
+          grade: 'الصف الأول',
+          section: 'ب',
+          schoolId: 'school-1', 
+          currentTeacherId: 'teacher-2',
+          status: 'present',
+          guardianId: 'parent-1'
+        }
+      ]
+
+      const demoTeachers = [
+        {
+          id: 'teacher-1',
+          name: 'أستاذة مريم العتيبي',
+          schoolId: 'school-1',
+          classes: [{ grade: 'الصف الثالث', section: 'أ' }],
+          currentPeriod: { subject: 'الرياضيات', time: '10:30-11:15' }
+        },
+        {
+          id: 'teacher-2', 
+          name: 'أستاذة نورا الأحمد',
+          schoolId: 'school-1',
+          classes: [{ grade: 'الصف الأول', section: 'ب' }],
+          currentPeriod: { subject: 'اللغة العربية', time: '11:15-12:00' }
+        }
+      ]
+
+      // Store demo data
+      await spark.kv.set('demo_school', demoSchool)
+      await spark.kv.set('demo_students', demoStudents)
+      await spark.kv.set('demo_teachers', demoTeachers)
     }
-  ])
 
-  const [dismissalQueue] = useKV('dismissal_queue', {
-    isActive: false,
-    position: 0,
-    totalInQueue: 0,
-    estimatedWaitTime: 0,
-    requestId: null
-  })
+    initDemoData()
+  }, [])
 
-  const [location, setLocation] = useKV('user_location', {
-    latitude: 0,
-    longitude: 0,
-    distanceFromSchool: user.distanceFromSchool
-  })
+  const handleUserTypeSelect = (userType: string) => {
+    setAuthStep('login')
+    // In real app, this would set the user type for login context
+  }
 
-  const renderView = () => {
-    switch(currentView) {
-      case 'dismissal-request':
-        return <DismissalRequest 
-          students={students}
-          onBack={() => setCurrentView('home')}
-          onSubmit={() => {
-            toast.success('تم إرسال طلب الانصراف بنجاح')
-            setCurrentView('home')
-          }}
-        />
-      case 'early-dismissal':
-        return <EarlyDismissal 
-          students={students}
-          onBack={() => setCurrentView('home')}
-          onSubmit={() => {
-            toast.success('تم إرسال طلب الاستئذان المبكر')
-            setCurrentView('home')
-          }}
-        />
-      case 'delegates':
-        return <DelegateManagement 
-          onBack={() => setCurrentView('home')}
-        />
+  const handleLogin = (userData: any) => {
+    setCurrentUser(userData)
+    setAuthStep('app')
+    toast.success(`مرحباً ${userData.name}`)
+  }
+
+  const handleLogout = () => {
+    setCurrentUser(null)
+    setAuthStep('selection')
+    toast.info('تم تسجيل الخروج بنجاح')
+  }
+
+  const renderApp = () => {
+    if (!currentUser) {
+      switch (authStep) {
+        case 'selection':
+          return <UserSelection onSelectUserType={handleUserTypeSelect} />
+        case 'login':
+          return <LoginScreen onLogin={handleLogin} onBack={() => setAuthStep('selection')} />
+        default:
+          return <UserSelection onSelectUserType={handleUserTypeSelect} />
+      }
+    }
+
+    // Render appropriate app based on user role
+    switch (currentUser.role) {
+      case 'parent':
+        return <ParentApp user={currentUser} onLogout={handleLogout} />
+      case 'school_admin':
+      case 'principal':
+        return <SchoolDashboard user={currentUser} onLogout={handleLogout} />
+      case 'teacher':
+        return <TeacherApp user={currentUser} onLogout={handleLogout} />
       default:
-        return (
-          <>
-            <Header user={user} />
-            
-            <StatusBar 
-              distanceFromSchool={location.distanceFromSchool}
-              dismissalQueue={dismissalQueue}
-              onActivateRequest={() => setCurrentView('dismissal-request')}
-            />
-            
-            <main className="flex-1 p-4 space-y-6">
-              <StudentGrid 
-                students={students}
-                onRequestDismissal={() => setCurrentView('dismissal-request')}
-                onEarlyDismissal={() => setCurrentView('early-dismissal')}
-              />
-              
-              <QuickActions 
-                onQuickDismissal={() => setCurrentView('dismissal-request')}
-                onEmergencyRequest={() => setCurrentView('early-dismissal')} 
-                onManageDelegates={() => setCurrentView('delegates')}
-                onViewReports={() => toast.info('التقارير قيد التطوير')}
-              />
-            </main>
-          </>
-        )
+        return <div className="p-4 text-center">نوع المستخدم غير مدعوم</div>
     }
   }
 
   return (
     <div className="min-h-screen bg-background flex flex-col arabic-text">
-      {renderView()}
+      {renderApp()}
       <Toaster 
         position="top-center"
         toastOptions={{

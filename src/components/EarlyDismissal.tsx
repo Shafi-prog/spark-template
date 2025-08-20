@@ -21,7 +21,7 @@ interface Student {
 interface EarlyDismissalProps {
   students: Student[]
   onBack: () => void
-  onSubmit: () => void
+  onSubmit: (studentId: string, reason: string, attachments: any[]) => void
 }
 
 export function EarlyDismissal({ students, onBack, onSubmit }: EarlyDismissalProps) {
@@ -63,7 +63,10 @@ export function EarlyDismissal({ students, onBack, onSubmit }: EarlyDismissalPro
       toast.error('يرجى تعبئة جميع الحقول المطلوبة')
       return
     }
-    onSubmit()
+    
+    // For now, handle single student (you can extend for multiple)
+    const studentId = selectedStudents[0]
+    onSubmit(studentId, reason, attachments)
   }
 
   const requestTypes = [

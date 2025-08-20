@@ -23,7 +23,7 @@ interface Student {
 interface DismissalRequestProps {
   students: Student[]
   onBack: () => void
-  onSubmit: () => void
+  onSubmit: (selectedStudents: string[], carInfo: any) => void
 }
 
 export function DismissalRequest({ students, onBack, onSubmit }: DismissalRequestProps) {
@@ -55,7 +55,16 @@ export function DismissalRequest({ students, onBack, onSubmit }: DismissalReques
 
   const handleSubmit = () => {
     if (selectedStudents.length === 0) return
-    onSubmit()
+    
+    const carInfo = {
+      location: carLocation,
+      type: carType,
+      color: carColor,
+      plateNumber: plateNumber,
+      notes: notes
+    }
+    
+    onSubmit(selectedStudents, carInfo)
   }
 
   return (

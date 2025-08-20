@@ -1,4 +1,4 @@
-import { Bell, User, Menu } from '@phosphor-icons/react'
+import { Bell, User, Menu, SignOut } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -9,9 +9,10 @@ interface HeaderProps {
     phone: string
     photo?: string
   }
+  onLogout?: () => void
 }
 
-export function Header({ user }: HeaderProps) {
+export function Header({ user, onLogout }: HeaderProps) {
   const currentDate = new Date().toLocaleDateString('ar-SA', {
     weekday: 'long',
     year: 'numeric', 
@@ -58,6 +59,12 @@ export function Header({ user }: HeaderProps) {
               3
             </Badge>
           </Button>
+          
+          {onLogout && (
+            <Button variant="ghost" size="icon" onClick={onLogout}>
+              <SignOut size={20} />
+            </Button>
+          )}
           
           <Button variant="ghost" size="icon">
             <Menu size={20} />
