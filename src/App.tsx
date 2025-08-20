@@ -42,11 +42,6 @@ function AppContent() {
     await initDemoData()
   }, false)
 
-  // Initialize demo data on mount
-  useEffect(() => {
-    initializeData()
-  }, [])
-
   // Initialize comprehensive demo data with enhanced error handling
   const initDemoData = async () => {
       try {
@@ -271,7 +266,9 @@ function AppContent() {
       }
     }
 
-    initDemoData()
+  // Initialize demo data on mount
+  useEffect(() => {
+    initializeData()
   }, [])
 
   const handleUserTypeSelect = (userType: string) => {
