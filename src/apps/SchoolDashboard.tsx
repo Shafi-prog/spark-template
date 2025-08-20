@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch"
 
 // Components
 import { SoundSystem } from '../components/SoundSystem'
+import { AnalyticsReports } from '../components/analytics/AnalyticsReports'
 
 // Icons
 import { 
@@ -635,12 +636,7 @@ export function SchoolDashboard({ user, onLogout }: SchoolDashboardProps) {
           <TabsContent value="overview">{renderOverview()}</TabsContent>
           <TabsContent value="early-dismissal">{renderEarlyDismissals()}</TabsContent>
           <TabsContent value="reports">
-            <Card>
-              <CardContent className="p-8 text-center">
-                <ChartBar size={48} className="mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">التقارير والإحصائيات قيد التطوير</p>
-              </CardContent>
-            </Card>
+            <AnalyticsReports onBack={() => setCurrentTab('overview')} />
           </TabsContent>
           <TabsContent value="settings">{renderSettings()}</TabsContent>
         </Tabs>

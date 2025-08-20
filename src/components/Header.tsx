@@ -2,12 +2,16 @@ import { Bell, User, Menu, SignOut } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { NotificationCenter } from './notifications/NotificationCenter'
+import { RealTimeStatus } from './realtime/RealTimeStatus'
 
 interface HeaderProps {
   user: {
     name: string
     phone: string
     photo?: string
+    role?: string
+    id?: string
   }
   onLogout?: () => void
 }
@@ -50,15 +54,19 @@ export function Header({ user, onLogout }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell size={20} />
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
-            >
-              3
-            </Badge>
-          </Button>
+          <div className="relative">
+            <RealTimeStatus 
+              userRole={user.role as any || 'parent'}
+              userId={user.id || 'default'}
+            />
+          </div>
+          
+          <div className="relative">
+            <NotificationCenter 
+              userRole={user.role as any || 'parent'}
+              userId={user.id || 'default'}
+            />
+          </div>
           
           {onLogout && (
             <Button variant="ghost" size="icon" onClick={onLogout}>

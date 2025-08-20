@@ -186,9 +186,48 @@ function App() {
         await spark.kv.set('early_dismissal_requests', [])
         await spark.kv.set('pending_approvals', [])
         await spark.kv.set('active_requests', [])
-        await spark.kv.set('school_notifications', [])
-        await spark.kv.set('teacher_notifications', [])
-        await spark.kv.set('admin_notifications', [])
+        
+        // Initialize demo notifications
+        const demoNotifications = [
+          {
+            id: `notif_${Date.now()}_1`,
+            type: 'dismissal_request',
+            title: 'طلب انصراف جديد',
+            message: 'أحمد السعودي يطلب انصراف طالبين من الفصل',
+            timestamp: new Date().toISOString(),
+            read: false,
+            priority: 'medium',
+            actionRequired: false,
+            data: { parentName: 'أحمد السعودي', studentCount: 2 }
+          },
+          {
+            id: `notif_${Date.now()}_2`,
+            type: 'early_dismissal',
+            title: 'طلب استئذان مبكر',
+            message: 'طلب استئذان للطالب محمد أحمد لموعد طبي',
+            timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+            read: false,
+            priority: 'high',
+            actionRequired: true,
+            data: { studentName: 'محمد أحمد', reason: 'موعد طبي' }
+          },
+          {
+            id: `notif_${Date.now()}_3`,
+            type: 'security_alert',
+            title: 'تنبيه أمني',
+            message: 'محاولة استلام غير مصرح بها تم منعها',
+            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+            read: true,
+            priority: 'urgent',
+            actionRequired: false,
+            data: { location: 'البوابة الرئيسية', time: '12:45' }
+          }
+        ]
+
+        await spark.kv.set('school_notifications', demoNotifications)
+        await spark.kv.set('teacher_notifications', demoNotifications.slice(0, 2))
+        await spark.kv.set('parent_notifications_parent-1', [demoNotifications[0]])
+        await spark.kv.set('global_notifications', [demoNotifications[2]])
       } catch (error) {
         console.error('Error initializing demo data:', error)
       }

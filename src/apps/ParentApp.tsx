@@ -9,6 +9,8 @@ import { DismissalRequest } from '../components/DismissalRequest'
 import { EarlyDismissal } from '../components/EarlyDismissal'
 import { DelegateManagement } from '../components/DelegateManagement'
 import { AuthorizedDriverView } from '../components/AuthorizedDriverView'
+import { LocationService } from '../components/location/LocationService'
+import { OfflineManager } from '../components/offline/OfflineManager'
 
 interface ParentAppProps {
   user: any
@@ -333,6 +335,25 @@ export function ParentApp({ user, onLogout }: ParentAppProps) {
             />
             
             <main className="flex-1 p-4 space-y-6">
+              <OfflineManager 
+                userRole={user.role}
+                userId={user.id}
+              />
+
+              <LocationService
+                schoolLocation={{ lat: 24.7136, lng: 46.6753 }}
+                geofenceRadius={100}
+                onLocationUpdate={(locationData, isNearSchool) => {
+                  setLocation(prev => ({
+                    ...prev,
+                    latitude: locationData.latitude,
+                    longitude: locationData.longitude,
+                    distanceFromSchool: isNearSchool ? 25 : 1200,
+                    isGPSActive: true
+                  }))
+                }}
+              />
+
               <StudentGrid 
                 students={students}
                 userRole={user.role}
