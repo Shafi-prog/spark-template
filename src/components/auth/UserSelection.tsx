@@ -1,3 +1,4 @@
+import React from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { User, GraduationCap, Shield, Car } from '@phosphor-icons/react'
