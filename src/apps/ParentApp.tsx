@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
 import { Header } from '../components/Header'
@@ -75,7 +75,7 @@ export function ParentApp({ user, onLogout }: ParentAppProps) {
     if (user) {
       loadUserData()
     }
-  }, [user, setStudents])
+  }, [user])
 
   // Helper functions
   const getCurrentStudentStatus = (student: any) => {
@@ -126,7 +126,7 @@ export function ParentApp({ user, onLogout }: ParentAppProps) {
 
     const interval = setInterval(updateLocation, 10000) // Update every 10 seconds
     return () => clearInterval(interval)
-  }, [setLocation])
+  }, [])
 
   // Handle dismissal request
   const handleDismissalRequest = async (selectedStudents: string[], carInfo: any, requestType = 'regular') => {
@@ -279,6 +279,17 @@ export function ParentApp({ user, onLogout }: ParentAppProps) {
     })
   }
 
+  // Memoize location update callback to prevent infinite re-renders
+  const handleLocationUpdate = useCallback((locationData: any, isNearSchool: boolean) => {
+    setLocation(prev => ({
+      ...prev,
+      latitude: locationData.latitude,
+      longitude: locationData.longitude,
+      distanceFromSchool: isNearSchool ? 25 : 1200,
+      isGPSActive: true
+    }))
+  }, [])
+
   const renderView = () => {
     // For authorized drivers, show a simplified view
     if (user.role === 'authorized_driver') {
@@ -343,15 +354,7 @@ export function ParentApp({ user, onLogout }: ParentAppProps) {
               <LocationService
                 schoolLocation={{ lat: 24.7136, lng: 46.6753 }}
                 geofenceRadius={100}
-                onLocationUpdate={(locationData, isNearSchool) => {
-                  setLocation(prev => ({
-                    ...prev,
-                    latitude: locationData.latitude,
-                    longitude: locationData.longitude,
-                    distanceFromSchool: isNearSchool ? 25 : 1200,
-                    isGPSActive: true
-                  }))
-                }}
+                onLocationUpdate={handleLocationUpdate}
               />
 
               <StudentGrid 

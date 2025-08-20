@@ -42,7 +42,6 @@ export function OfflineManager({ userRole, userId }: OfflineManagerProps) {
     const handleOnline = () => {
       setIsOnline(true)
       toast.success('🌐 تم الاتصال بالإنترنت - سيتم مزامنة البيانات')
-      syncPendingActions()
     }
 
     const handleOffline = () => {
@@ -62,9 +61,38 @@ export function OfflineManager({ userRole, userId }: OfflineManagerProps) {
   // Auto-sync when online
   useEffect(() => {
     if (isOnline && pendingActions.length > 0) {
-      syncPendingActions()
+      const syncActions = async () => {
+        for (const action of pendingActions.filter(a => a.status === 'pending')) {
+          try {
+            // Simulate API call based on action type
+            await new Promise(resolve => setTimeout(resolve, 1000))
+            
+            // Mark action as completed
+            setPendingActions(prev => 
+              prev.map(a => 
+                a.id === action.id 
+                  ? { ...a, status: 'completed' as const }
+                  : a
+              )
+            )
+            
+            toast.success(`تم مزامنة العملية: ${action.type}`)
+          } catch (error) {
+            // Mark action as failed and increment retry count
+            setPendingActions(prev => 
+              prev.map(a => 
+                a.id === action.id 
+                  ? { ...a, status: 'failed' as const, retryCount: a.retryCount + 1 }
+                  : a
+              )
+            )
+          }
+        }
+      }
+
+      syncActions()
     }
-  }, [isOnline])
+  }, [isOnline, pendingActions.length])
 
   // Store action for offline execution
   const storeOfflineAction = async (type: string, data: any) => {
@@ -80,9 +108,7 @@ export function OfflineManager({ userRole, userId }: OfflineManagerProps) {
     const updated = [...pendingActions, action]
     setPendingActions(updated)
 
-    if (isOnline) {
-      syncPendingActions()
-    } else {
+    if (!isOnline) {
       toast.info('تم حفظ العملية محلياً - ستتم المزامنة عند الاتصال')
     }
 

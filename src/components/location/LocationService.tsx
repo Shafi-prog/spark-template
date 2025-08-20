@@ -50,7 +50,7 @@ export function LocationService({ schoolLocation, geofenceRadius, onLocationUpda
         toast.success('🎯 وصلت إلى المدرسة - يمكنك الآن طلب الانصراف')
       }
     }
-  }, [location, schoolLocation, geofenceRadius, calculateDistance, onLocationUpdate, distance])
+  }, [location?.latitude, location?.longitude, schoolLocation.lat, schoolLocation.lng, geofenceRadius, distance, onLocationUpdate])
 
   const handleEnableLocation = () => {
     if (!navigator.geolocation) {
