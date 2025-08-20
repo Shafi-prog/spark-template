@@ -111,6 +111,10 @@ export function SchoolDashboard({ user, onLogout }: SchoolDashboardProps) {
         }))
       } catch (error) {
         console.error('Error loading live data:', error)
+        // Ensure all arrays are properly initialized
+        setDismissalQueue([])
+        setPendingApprovals([])
+        setSchoolNotifications([])
       }
     }
 
@@ -124,7 +128,7 @@ export function SchoolDashboard({ user, onLogout }: SchoolDashboardProps) {
   // Handle early dismissal approval
   const handleApproveEarlyDismissal = async (requestId: string, approved: boolean) => {
     try {
-      const request = pendingApprovals.find(r => r.id === requestId)
+      const request = (Array.isArray(pendingApprovals) ? pendingApprovals : []).find(r => r?.id === requestId)
       if (!request) return
 
       const updatedRequest = {
@@ -137,7 +141,7 @@ export function SchoolDashboard({ user, onLogout }: SchoolDashboardProps) {
       }
 
       // Update pending requests
-      const updatedPending = pendingApprovals.filter(r => r.id !== requestId)
+      const updatedPending = (Array.isArray(pendingApprovals) ? pendingApprovals : []).filter(r => r?.id !== requestId)
       setPendingApprovals(updatedPending)
       await spark.kv.set('pending_early_dismissals', updatedPending)
 
@@ -184,15 +188,16 @@ export function SchoolDashboard({ user, onLogout }: SchoolDashboardProps) {
 
   // Handle dismissal request management
   const handleCallNextInQueue = async () => {
-    if (dismissalQueue.length === 0) return
+    const queueArray = Array.isArray(dismissalQueue) ? dismissalQueue : []
+    if (queueArray.length === 0) return
 
-    const nextRequest = dismissalQueue.find(r => r.status === 'queued')
+    const nextRequest = queueArray.find(r => r?.status === 'queued')
     if (!nextRequest) return
 
     try {
       // Update request status to called
-      const updatedQueue = dismissalQueue.map(r => 
-        r.id === nextRequest.id 
+      const updatedQueue = queueArray.map(r => 
+        r?.id === nextRequest.id 
           ? { ...r, status: 'called', calledAt: new Date().toISOString() }
           : r
       )

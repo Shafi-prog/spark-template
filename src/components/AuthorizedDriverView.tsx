@@ -22,7 +22,7 @@ interface AuthorizedDriverViewProps {
 
 export function AuthorizedDriverView({ 
   user, 
-  students, 
+  students = [], 
   dismissalQueue, 
   location, 
   onRequestDismissal,
@@ -35,7 +35,8 @@ export function AuthorizedDriverView({
     return `${(distance / 1000).toFixed(1)}كم`
   }
 
-  const canRequestPickup = location.distanceFromSchool <= 100 && students.length > 0
+  const studentsArray = Array.isArray(students) ? students : []
+  const canRequestPickup = location?.distanceFromSchool <= 100 && studentsArray.length > 0
 
   return (
     <div className="min-h-screen bg-background">

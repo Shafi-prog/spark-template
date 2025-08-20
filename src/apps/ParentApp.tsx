@@ -44,29 +44,35 @@ export function ParentApp({ user, onLogout }: ParentAppProps) {
         const demoStudents = await spark.kv.get('demo_students') || []
         let authorizedStudents = []
 
-        if (user.role === 'parent') {
+        if (user?.role === 'parent' && user?.children && Array.isArray(user.children)) {
           // Parent can access their own children
-          authorizedStudents = demoStudents.filter(s => user.children?.includes(s.id))
-        } else if (user.role === 'authorized_driver') {
+          authorizedStudents = (Array.isArray(demoStudents) ? demoStudents : [])
+            .filter(s => user.children.includes(s?.id))
+        } else if (user?.role === 'authorized_driver' && user?.authorizedStudents && Array.isArray(user.authorizedStudents)) {
           // Authorized driver can access delegated children
-          authorizedStudents = demoStudents.filter(s => user.authorizedStudents?.includes(s.id))
+          authorizedStudents = (Array.isArray(demoStudents) ? demoStudents : [])
+            .filter(s => user.authorizedStudents.includes(s?.id))
         }
         
-        const studentsWithStatus = authorizedStudents.map(student => ({
+        const studentsWithStatus = (Array.isArray(authorizedStudents) ? authorizedStudents : [])
+          .map(student => ({
           ...student,
           status: getCurrentStudentStatus(student),
           canRequestDismissal: canRequestDismissal(student),
-          canRequestEarly: user.role === 'parent', // Only parents can request early dismissal
+          canRequestEarly: user?.role === 'parent', // Only parents can request early dismissal
           school: 'مدرسة النور الابتدائية'
         }))
         
         setStudents(studentsWithStatus)
       } catch (error) {
         console.error('Error loading user data:', error)
+        setStudents([]) // Ensure students is always an array
       }
     }
 
-    loadUserData()
+    if (user) {
+      loadUserData()
+    }
   }, [user, setStudents])
 
   // Helper functions
@@ -123,7 +129,7 @@ export function ParentApp({ user, onLogout }: ParentAppProps) {
   // Handle dismissal request
   const handleDismissalRequest = async (selectedStudents: string[], carInfo: any, requestType = 'regular') => {
     try {
-      const studentsData = students.filter(s => selectedStudents.includes(s.id))
+      const studentsData = (Array.isArray(students) ? students : []).filter(s => selectedStudents.includes(s?.id))
       
       const request = {
         id: `req_${Date.now()}`,
@@ -188,7 +194,7 @@ export function ParentApp({ user, onLogout }: ParentAppProps) {
     }
 
     try {
-      const studentData = students.find(s => s.id === studentId)
+      const studentData = (Array.isArray(students) ? students : []).find(s => s?.id === studentId)
       
       const request = {
         id: `early_${Date.now()}`,
@@ -251,7 +257,7 @@ export function ParentApp({ user, onLogout }: ParentAppProps) {
           }
           
           if (status === 'called') {
-            setDismissalQueue(prev => ({ ...prev, calledStudents: students.map(s => s.id) }))
+            setDismissalQueue(prev => ({ ...prev, calledStudents: Array.isArray(students) ? students.map(s => s?.id).filter(Boolean) : [] }))
           }
           
           if (status === 'completed') {

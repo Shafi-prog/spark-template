@@ -64,9 +64,11 @@ export function TeacherApp({ user, onLogout }: TeacherAppProps) {
       try {
         // Load students assigned to this teacher
         const demoStudents = await spark.kv.get('demo_students') || []
-        const teacherStudents = demoStudents.filter(s => s.currentTeacherId === user.id)
+        const teacherStudents = (Array.isArray(demoStudents) ? demoStudents : [])
+          .filter(s => s?.currentTeacherId === user?.id)
         
-        const studentsWithStatus = teacherStudents.map(student => ({
+        const studentsWithStatus = (Array.isArray(teacherStudents) ? teacherStudents : [])
+          .map(student => ({
           ...student,
           attendanceStatus: 'present',
           dismissalStatus: 'in_class',
@@ -77,27 +79,27 @@ export function TeacherApp({ user, onLogout }: TeacherAppProps) {
 
         // Load teacher notifications
         const notifications = await spark.kv.get('teacher_notifications') || []
-        const myNotifications = notifications.filter(n => n.teacherId === user.id)
+        const myNotifications = (Array.isArray(notifications) ? notifications : [])
+          .filter(n => n?.teacherId === user?.id)
         setTeacherNotifications(myNotifications)
 
         // Load early dismissal requests for my students
         const earlyRequests = await spark.kv.get('approved_early_dismissals') || []
-        const myRequests = earlyRequests.filter(r => 
-          teacherStudents.some(s => s.id === r.studentId)
-        )
+        const myRequests = (Array.isArray(earlyRequests) ? earlyRequests : [])
+          .filter(r => teacherStudents.some(s => s?.id === r?.studentId))
         setEarlyDismissalRequests(myRequests)
 
         // Set current period info
         const now = new Date()
         const currentHour = now.getHours()
         
-        let currentPeriod = user.currentPeriod || {}
+        let currentPeriod = user?.currentPeriod || {}
         
         // Dynamic period based on time
         if (currentHour >= 8 && currentHour < 9) {
-          currentPeriod = { subject: 'الحصة الأولى', time: '08:00-08:45', location: `فصل ${user.classes[0]?.grade}${user.classes[0]?.section}` }
+          currentPeriod = { subject: 'الحصة الأولى', time: '08:00-08:45', location: `فصل ${user?.classes?.[0]?.grade}${user?.classes?.[0]?.section}` }
         } else if (currentHour >= 9 && currentHour < 10) {
-          currentPeriod = { subject: 'الحصة الثانية', time: '09:00-09:45', location: `فصل ${user.classes[0]?.grade}${user.classes[0]?.section}` }
+          currentPeriod = { subject: 'الحصة الثانية', time: '09:00-09:45', location: `فصل ${user?.classes?.[0]?.grade}${user?.classes?.[0]?.section}` }
         } else if (currentHour >= 10 && currentHour < 11) {
           currentPeriod = { subject: 'الحصة الثالثة', time: '10:00-10:45', location: `فصل ${user.classes[0]?.grade}${user.classes[0]?.section}` }
         } else if (currentHour >= 11 && currentHour < 12) {
@@ -111,26 +113,32 @@ export function TeacherApp({ user, onLogout }: TeacherAppProps) {
         // Update classroom stats
         setClassroomStats({
           totalStudents: teacherStudents.length,
-          presentToday: teacherStudents.filter(s => s.attendanceStatus === 'present').length,
+          presentToday: teacherStudents.filter(s => s?.attendanceStatus === 'present').length,
           earlyDismissals: myRequests.length,
-          pendingDismissals: myNotifications.filter(n => n.type === 'early_dismissal_approved' && !n.processed).length
+          pendingDismissals: myNotifications.filter(n => n?.type === 'early_dismissal_approved' && !n?.processed).length
         })
       } catch (error) {
         console.error('Error loading teacher data:', error)
+        // Ensure all arrays are properly initialized even on error
+        setMyStudents([])
+        setTeacherNotifications([])
+        setEarlyDismissalRequests([])
       }
     }
 
-    loadTeacherData()
-    
-    // Refresh data every 30 seconds
-    const interval = setInterval(loadTeacherData, 30000)
-    return () => clearInterval(interval)
-  }, [user.id])
+    if (user?.id) {
+      loadTeacherData()
+      
+      // Refresh data every 30 seconds
+      const interval = setInterval(loadTeacherData, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [user?.id])
 
   // Handle early dismissal preparation
   const handlePrepareDismissal = async (requestId: string, studentId: string) => {
     try {
-      const student = myStudents.find(s => s.id === studentId)
+      const student = (Array.isArray(myStudents) ? myStudents : []).find(s => s?.id === studentId)
       if (!student) return
 
       // Update student status

@@ -63,7 +63,10 @@ const statusConfig = {
   }
 }
 
-export function StudentGrid({ students, userRole = 'parent', onRequestDismissal, onEarlyDismissal }: StudentGridProps) {
+export function StudentGrid({ students = [], userRole = 'parent', onRequestDismissal, onEarlyDismissal }: StudentGridProps) {
+  // Ensure students is always an array
+  const studentsArray = Array.isArray(students) ? students : []
+
   const getRoleLabel = () => {
     switch (userRole) {
       case 'authorized_driver':
@@ -79,34 +82,43 @@ export function StudentGrid({ students, userRole = 'parent', onRequestDismissal,
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">{getRoleLabel()}</h2>
         <Badge variant="outline" className="text-sm">
-          {students.length} طالب
+          {studentsArray.length} طالب
         </Badge>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {students.map((student) => {
-          const StatusIcon = statusConfig[student.status].icon
-          const statusStyle = statusConfig[student.status]
-          
-          return (
-            <Card key={student.id} className="hover:shadow-lg transition-all duration-200 border-2 hover:border-primary/20">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-14 w-14 border-2 border-primary/10">
-                    <AvatarFallback className="bg-primary/5 text-primary font-semibold">
-                      {student.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
+      {studentsArray.length === 0 ? (
+        <Card className="p-8 text-center">
+          <div className="space-y-2">
+            <User className="mx-auto h-12 w-12 text-muted-foreground" />
+            <h3 className="text-lg font-medium text-muted-foreground">لا توجد بيانات طلاب</h3>
+            <p className="text-sm text-muted-foreground">سيتم عرض الطلاب هنا عند توفر البيانات</p>
+          </div>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {studentsArray.map((student) => {
+            const StatusIcon = statusConfig[student.status]?.icon || User
+            const statusStyle = statusConfig[student.status] || statusConfig.pending
+            
+            return (
+              <Card key={student.id} className="hover:shadow-lg transition-all duration-200 border-2 hover:border-primary/20">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-14 w-14 border-2 border-primary/10">
+                      <AvatarFallback className="bg-primary/5 text-primary font-semibold">
+                        {student?.name?.split(' ')?.map(n => n?.[0])?.join('')?.slice(0, 2) || 'طالب'}
+                      </AvatarFallback>
+                    </Avatar>
                   
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-foreground text-lg leading-tight">
-                      {student.name}
+                      {student?.name || 'غير محدد'}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      {student.grade} - {student.section}
+                      {student?.grade || ''} - {student?.section || ''}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {student.school}
+                      {student?.school || ''}
                     </p>
                   </div>
                   
@@ -126,7 +138,7 @@ export function StudentGrid({ students, userRole = 'parent', onRequestDismissal,
                     size="sm" 
                     className="flex-1"
                     onClick={onRequestDismissal}
-                    disabled={!student.canRequestDismissal}
+                    disabled={!student?.canRequestDismissal}
                   >
                     <User size={14} className="ml-1" />
                     {userRole === 'authorized_driver' ? 'طلب استلام' : 'طلب انصراف'}
@@ -139,7 +151,7 @@ export function StudentGrid({ students, userRole = 'parent', onRequestDismissal,
                       size="sm" 
                       className="flex-1"
                       onClick={onEarlyDismissal}
-                      disabled={!student.canRequestEarly}
+                      disabled={!student?.canRequestEarly}
                     >
                       <Clock size={14} className="ml-1" />
                       استئذان مبكر
@@ -150,7 +162,8 @@ export function StudentGrid({ students, userRole = 'parent', onRequestDismissal,
             </Card>
           )
         })}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

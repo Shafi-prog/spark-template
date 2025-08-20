@@ -24,7 +24,7 @@ interface EarlyDismissalProps {
   onSubmit: (studentId: string, reason: string, attachments: any[]) => void
 }
 
-export function EarlyDismissal({ students, onBack, onSubmit }: EarlyDismissalProps) {
+export function EarlyDismissal({ students = [], onBack, onSubmit }: EarlyDismissalProps) {
   const [selectedStudents, setSelectedStudents] = useState<string[]>([])
   const [requestType, setRequestType] = useState('')
   const [reason, setReason] = useState('')

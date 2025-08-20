@@ -28,7 +28,7 @@ interface DismissalRequestProps {
   onSubmit: (selectedStudents: string[], carInfo: any, requestType?: string) => void
 }
 
-export function DismissalRequest({ students, user, isAuthorizedDriver = false, onBack, onSubmit }: DismissalRequestProps) {
+export function DismissalRequest({ students = [], user, isAuthorizedDriver = false, onBack, onSubmit }: DismissalRequestProps) {
   const [selectedStudents, setSelectedStudents] = useState<string[]>([])
   const [carLocation, setCarLocation] = useState('')
   const [carType, setCarType] = useState('')
@@ -37,7 +37,7 @@ export function DismissalRequest({ students, user, isAuthorizedDriver = false, o
   const [notes, setNotes] = useState('')
   const [showDetails, setShowDetails] = useState(false)
 
-  const availableStudents = students.filter(s => s.canRequestDismissal)
+  const availableStudents = (Array.isArray(students) ? students : []).filter(s => s?.canRequestDismissal)
   
   const handleStudentToggle = (studentId: string) => {
     setSelectedStudents(prev => 
@@ -51,7 +51,7 @@ export function DismissalRequest({ students, user, isAuthorizedDriver = false, o
     if (selectedStudents.length === availableStudents.length) {
       setSelectedStudents([])
     } else {
-      setSelectedStudents(availableStudents.map(s => s.id))
+      setSelectedStudents((Array.isArray(availableStudents) ? availableStudents : []).map(s => s?.id).filter(Boolean))
     }
   }
 
